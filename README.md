@@ -1,5 +1,5 @@
 ---
-title: Svelte
+title: Gwyw
 emoji: 🔥
 colorFrom: pink
 colorTo: gray
