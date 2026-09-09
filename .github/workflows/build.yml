@@ -45,6 +45,25 @@ jobs:
           echo "Build successful"
           du -sh dist/
 
+      # Create exactly what should exist in the HF Space.
+      # Source code never goes into this directory.
+      - name: Prepare Hugging Face deployment
+        run: |
+          rm -rf .hf-deploy
+          mkdir -p .hf-deploy
+
+          # Copy the compiled website
+          cp -a dist/. .hf-deploy/
+
+          # Copy the HF Space configuration
+          cp README.md .hf-deploy/README.md
+
+          echo "Deployment contents:"
+          find .hf-deploy -maxdepth 2 -type f | sort
+
+          test -f .hf-deploy/README.md
+          test -f .hf-deploy/index.html
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -54,7 +73,7 @@ jobs:
           retention-days: 7
           compression-level: 0
 
-      - name: Deploy dist to Hugging Face
+      - name: Deploy to Hugging Face
         uses: huggingface/hub-sync@v0.1.0
         with:
           github_repo_id: ${{ github.repository }}
@@ -62,4 +81,4 @@ jobs:
           hf_token: ${{ secrets.HF_TOKEN }}
           repo_type: space
           space_sdk: static
-          subdirectory: dist
+          subdirectory: .hf-deploy
