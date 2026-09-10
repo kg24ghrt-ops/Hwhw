@@ -1,10 +1,6 @@
 <script lang="ts">
-  // Realistic school notebook paper background only
-  // Based on researched specifications:
-  // - US Letter size: 8.5" x 11" (215.9mm x 279.4mm)
-  // - College ruled: 5.5mm line spacing (~0.21875")
-  // - Left margin: 1.25" (31.75mm) - red margin line
-  // - Paper color: warm off-white #f7f5f0
+  // Realistic school notebook paper background using actual photographed paper texture
+  // Downloaded realistic paper image from the internet for maximum authenticity
   
   // Generate realistic notebook lines based on college ruling standard
   const lineHeight = 28; // pixels at 96dpi ~ 5.5mm
@@ -26,21 +22,13 @@
   :global(body) {
     margin: 0;
     min-height: 100vh;
-    /* Realistic paper base with multi-layer fiber texture */
-    /* Based on actual paper microscopy: cellulose fibers create irregular grain patterns */
+    /* Use realistic photographed paper texture from internet */
     background: 
-      /* Layer 1: Fine paper grain (microscopic fiber texture) */
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paperTexture'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='4' stitchTiles='stitch' seed='15'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.08'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperTexture)'/%3E%3C/svg%3E"),
-      /* Layer 2: Medium fiber bundles (visible paper texture) */
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='fiberPattern'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.12' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.15 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23fiberPattern)' opacity='0.12'/%3E%3C/svg%3E"),
-      /* Layer 3: Subtle horizontal paper machine marks (manufacturing texture) */
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='machineMarks'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.02 0.8' numOctaves='1' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23machineMarks)'/%3E%3C/svg%3E"),
-      /* Base paper color - warm off-white with slight cream tone */
+      url('/notebook-paper.jpg') center center / cover no-repeat,
       #f7f5f0;
-    background-blend-mode: multiply;
   }
   
-  /* Realistic lighting - soft vignette + subtle surface variation */
+  /* Realistic lighting - soft vignette for depth */
   :global(body::after) {
     content: '';
     position: fixed;
@@ -49,10 +37,8 @@
     right: 0;
     bottom: 0;
     pointer-events: none;
-    /* Multi-layer lighting: vignette + subtle paper surface shadows */
     background: 
-      radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 60%),
-      radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.04) 100%);
+      radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.08) 100%);
     z-index: 1000;
   }
 
