@@ -1,12 +1,12 @@
 :root {
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'Georgia', serif;
   line-height: 1.5;
   font-weight: 400;
-
+  
   color-scheme: light;
-  color: #1a3a5c;
-  background-color: #f5f0e6;
-
+  color: #1a1a1a;
+  background-color: #faf9f6;
+  
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -21,17 +21,19 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  /* Realistic paper background with texture */
+  /* Realistic school notebook paper background */
+  /* Based on US Letter size: 8.5" x 11" (215.9mm x 279.4mm) */
+  /* College ruled: 5.5mm line spacing, 1.25" left margin */
   background: 
-    /* Paper texture noise */
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E"),
-    /* Warm paper base color gradient */
-    linear-gradient(135deg, #fdfbf7 0%, #f5f0e6 50%, #ede6d5 100%);
+    /* Subtle paper fiber texture (realistic paper grain) */
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paperGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperGrain)' opacity='0.06'/%3E%3C/svg%3E"),
+    /* Warm off-white paper base (natural paper color, not pure white) */
+    #faf9f6;
   background-blend-mode: multiply;
 }
 
-/* Realistic lighting effect - subtle vignette */
-body::before {
+/* Realistic lighting - subtle shadow/vignette for depth */
+body::after {
   content: '';
   position: fixed;
   top: 0;
@@ -39,9 +41,9 @@ body::before {
   right: 0;
   bottom: 0;
   pointer-events: none;
+  /* Soft vignette and paper shadow effect */
   background: 
-    radial-gradient(ellipse at center, transparent 0%, transparent 60%, rgba(0,0,0,0.05) 100%),
-    linear-gradient(to bottom, rgba(0,0,0,0.02) 0%, transparent 10%, transparent 90%, rgba(0,0,0,0.03) 100%);
+    radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,0.03) 100%);
   z-index: 1000;
 }
 
@@ -59,8 +61,8 @@ a:hover {
 h1 {
   font-size: 2.5em;
   line-height: 1.1;
-  font-family: 'Caveat', cursive;
-  color: #1a3a5c;
+  font-family: 'Georgia', serif;
+  color: #1a1a1a;
 }
 
 #app {
@@ -69,115 +71,13 @@ h1 {
   padding: 2rem;
 }
 
-/* Blueprint-style notebook paper container */
-.paper-container {
-  background: 
-    /* Subtle paper fiber texture */
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paperNoise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperNoise)' opacity='0.05'/%3E%3C/svg%3E"),
-    linear-gradient(135deg, #fffcf5 0%, #faf6ed 100%);
-  background-blend-mode: multiply;
-  border-radius: 4px;
-  box-shadow: 
-    /* Soft shadow for depth */
-    0 1px 3px rgba(0,0,0,0.08),
-    0 4px 12px rgba(0,0,0,0.12),
-    /* Inner shadow for paper edge effect */
-    inset 0 0 60px rgba(139, 119, 101, 0.03);
-  overflow: hidden;
-  position: relative;
-}
-
-/* Red margin line (national/global standard) */
-.paper-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 60px;
-  width: 2px;
-  height: 100%;
-  background: linear-gradient(to bottom, #dc2626 0%, #b91c1c 100%);
-  opacity: 0.7;
-  z-index: 1;
-}
-
-/* Blueprint measurement lines */
-.measurements {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.15;
-}
-
-.measurements-horz {
-  position: absolute;
-  left: 70px;
-  right: 20px;
-  height: 1px;
-  background: linear-gradient(to right, #3b82f6, #1d4ed8);
-}
-
-.measurements-vert {
-  position: absolute;
-  top: 40px;
-  bottom: 20px;
-  width: 1px;
-  background: linear-gradient(to bottom, #3b82f6, #1d4ed8);
-}
-
-.measurement-label {
-  position: absolute;
-  font-size: 8px;
-  color: #1d4ed8;
-  font-family: 'Roboto Mono', monospace;
-}
-
-/* Blue horizontal lines (notebook style) */
-.lines-container {
-  position: absolute;
-  top: 40px;
-  left: 70px;
-  right: 20px;
-  bottom: 20px;
-  z-index: 0;
-}
-
-.notebook-line {
-  height: 28px;
-  border-bottom: 1px solid rgba(59, 130, 246, 0.4);
-  position: relative;
-}
-
-.notebook-line::before {
-  content: attr(data-number);
-  position: absolute;
-  left: -35px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 9px;
-  color: #64748b;
-  font-family: 'Roboto Mono', monospace;
-  opacity: 0.6;
-}
-
-/* Content area */
-.content-area {
-  position: relative;
-  z-index: 2;
-  padding: 40px 30px 30px 80px;
-  min-height: 600px;
-}
-
 button {
   border-radius: 4px;
   border: 1px solid #3b82f6;
   padding: 0.6em 1.2em;
   font-size: 0.9em;
   font-weight: 500;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'Georgia', serif;
   background-color: #eff6ff;
   color: #1d4ed8;
   cursor: pointer;
@@ -200,17 +100,4 @@ button.primary {
 }
 button.primary:hover {
   background-color: #1d4ed8;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #cbd5e1;
-    background-color: #1a202c;
-  }
-  body {
-    background: 
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E"),
-      linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%);
-    background-blend-mode: multiply;
-  }
 }
