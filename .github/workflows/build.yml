@@ -28,31 +28,31 @@ jobs:
           fetch-depth: 1
 
       # --------------------------------------------------
-      # 2. Install Bun
+      # 2. Install Node.js
       # --------------------------------------------------
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
-          cache: true
+          node-version: 22
+          cache: npm
 
       # --------------------------------------------------
-      # 3. Show Bun version
+      # 3. Show Node.js version
       # --------------------------------------------------
-      - name: Show Bun version
-        run: bun --version
+      - name: Show Node.js version
+        run: node --version
 
       # --------------------------------------------------
       # 4. Install dependencies
       # --------------------------------------------------
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci
 
       # --------------------------------------------------
       # 5. Build the production website
       # --------------------------------------------------
       - name: Build production bundle
-        run: bun run build
+        run: npm run build
 
       # --------------------------------------------------
       # 6. Verify the build
