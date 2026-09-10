@@ -1,24 +1,41 @@
+```
+# Build artifacts
+dist/
+*.css
+*.js
+
+# Dependencies
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
 # Logs
-logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Coverage
+coverage/
+htmlcov/
+.coverage
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Temp files
+*.tmp
+*.swp
+*.swo
+
+# OS
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+```
