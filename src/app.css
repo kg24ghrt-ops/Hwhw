@@ -1,12 +1,10 @@
 :root {
-  font-family: 'Georgia', serif;
+  font-family: Georgia, serif;
   line-height: 1.5;
   font-weight: 400;
-  
   color-scheme: light;
   color: #1a1a1a;
-  background-color: #faf9f6;
-  
+  background-color: transparent;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -21,83 +19,20 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  /* Realistic school notebook paper background */
-  /* Based on US Letter size: 8.5" x 11" (215.9mm x 279.4mm) */
-  /* College ruled: 5.5mm line spacing, 1.25" left margin */
-  background: 
-    /* Subtle paper fiber texture (realistic paper grain) */
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paperGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperGrain)' opacity='0.06'/%3E%3C/svg%3E"),
-    /* Warm off-white paper base (natural paper color, not pure white) */
-    #faf9f6;
-  background-blend-mode: multiply;
+  background: transparent;
 }
 
-/* Realistic lighting - subtle shadow/vignette for depth */
-body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  /* Soft vignette and paper shadow effect */
-  background: 
-    radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,0.03) 100%);
-  z-index: 1000;
+:global(body) {
+  background: transparent !important;
 }
 
-a {
-  font-weight: 500;
-  color: #2563eb;
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.2s;
-}
-a:hover {
-  border-bottom-color: #2563eb;
-}
-
-h1 {
-  font-size: 2.5em;
-  line-height: 1.1;
-  font-family: 'Georgia', serif;
-  color: #1a1a1a;
+:global(body::after) {
+  display: none !important;
 }
 
 #app {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-button {
-  border-radius: 4px;
-  border: 1px solid #3b82f6;
-  padding: 0.6em 1.2em;
-  font-size: 0.9em;
-  font-weight: 500;
-  font-family: 'Georgia', serif;
-  background-color: #eff6ff;
-  color: #1d4ed8;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-button:hover {
-  background-color: #dbeafe;
-  border-color: #1d4ed8;
-}
-button:focus,
-button:focus-visible {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-}
-
-button.primary {
-  background-color: #2563eb;
-  color: white;
-  border-color: #2563eb;
-}
-button.primary:hover {
-  background-color: #1d4ed8;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
