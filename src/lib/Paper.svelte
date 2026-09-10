@@ -1,9 +1,6 @@
 <script lang="ts">
   import { onMount, afterUpdate } from 'svelte';
   import { PAPER_SPEC_A4_COLLEGE, mmToPx, getAspectRatio, DEBUG_PAPER_GEOMETRY, type PaperSpec } from './paperConfig';
-  import PaperTexture from './PaperTexture.svelte';
-  import PaperRuling from './PaperRuling.svelte';
-  import PaperLighting from './PaperLighting.svelte';
   
   export let spec: PaperSpec = PAPER_SPEC_A4_COLLEGE;
   export let dpi: number = 96;
@@ -19,6 +16,9 @@
   let topPadding = 0;
   let leftPadding = 0;
   let rightPadding = 0;
+  
+  // Realistic notebook paper image from Unsplash
+  const notebookPaperImage = "https://images.unsplash.com/photo-1596541223130-5d31a73fb6c6?w=1200&q=80";
   
   function calculateDimensions() {
     if (!container) return;
@@ -96,6 +96,19 @@
     ></div>
   </div>
   
+  <!-- Realistic notebook paper image background -->
+  <div 
+    class="notebook-paper-bg"
+    style="
+      width: {paperWidth}px;
+      height: {paperHeight}px;
+      background-image: url('{notebookPaperImage}');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    "
+  ></div>
+  
   <div 
     class="paper-object"
     style="
@@ -107,26 +120,6 @@
       class="paper-substrate"
       style="background-color: {spec.paperTone};"
     ></div>
-    
-    <PaperTexture 
-      spec={spec} 
-      widthPx={paperWidth} 
-      heightPx={paperHeight} 
-      dpi={dpi}
-    />
-    
-    <PaperLighting 
-      spec={spec} 
-      widthPx={paperWidth} 
-      heightPx={paperHeight}
-    />
-    
-    <PaperRuling 
-      spec={spec} 
-      widthPx={paperWidth} 
-      heightPx={paperHeight} 
-      dpi={dpi}
-    />
     
     <div 
       class="paper-edge"
@@ -198,6 +191,14 @@
     height: 100%;
   }
   
+  .notebook-paper-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+  
   .paper-edge {
     position: absolute;
     top: 0;
@@ -212,6 +213,7 @@
     box-sizing: border-box;
     overflow-y: auto;
     z-index: 10;
+    background-color: rgba(255, 255, 255, 0.85);
   }
   
   .debug-overlay {
