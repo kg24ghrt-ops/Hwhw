@@ -1,5 +1,10 @@
-```
+# Dependencies
+node_modules/
+
 # Build artifacts
 dist/
 build/
-```
+
+# Editor / OS
+.DS_Store
+*.local

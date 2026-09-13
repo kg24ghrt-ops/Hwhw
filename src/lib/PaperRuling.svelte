@@ -1,72 +1,64 @@
 <script lang="ts">
-  import { mmToPx, type PaperSpec } from './paperConfig';
-  import { PAPER_SPEC_A4_COLLEGE } from './paperConfig';
-  
-  export let spec: PaperSpec = PAPER_SPEC_A4_COLLEGE;
-  export let widthPx: number;
-  export let heightPx: number;
-  export let dpi: number = 96;
-  
-  const mmToScreen = (mm: number) => mmToPx(mm, dpi);
-  const lineSpacingPx = mmToScreen(spec.rulingSpacingMm);
-  const marginPx = mmToScreen(spec.marginMm);
-  const lineWidthPx = Math.max(1, mmToScreen(spec.ruling.lineWidthMm));
-  const marginWidthPx = Math.max(1, mmToScreen(spec.ruling.marginWidthMm));
-  
-  const topMarginMm = 20;
-  const topMarginPx = mmToScreen(topMarginMm);
-  const startY = topMarginPx;
-  const endY = heightPx - 10;
-  const lineCount = Math.floor((endY - startY) / lineSpacingPx) + 1;
-  const lines = Array.from({ length: lineCount }, (_, i) => startY + i * lineSpacingPx);
-  
-  function getLineStyle(y: number): string {
-    const softness = spec.ruling.lineSoftness * 2;
-    return `
-      position: absolute;
-      left: ${marginPx + marginWidthPx}px;
-      right: 10px;
-      top: ${y}px;
-      height: ${lineWidthPx}px;
-      background: ${spec.ruling.lineColor};
-      opacity: ${spec.ruling.lineOpacity};
-      box-shadow: 0 ${softness}px ${softness * 2}px rgba(91, 124, 153, ${spec.ruling.lineOpacity * 0.3});
-    `;
+  import { PAPER_SPEC_A4_COLLEGE, type PaperSpec } from './paperConfig';
+  import { computePageMetrics } from './handwriting';
+
+  interface Props {
+    spec?: PaperSpec;
+    widthPx: number;
+    heightPx: number;
   }
-  
-  function getMarginStyle(): string {
-    const softness = spec.ruling.lineSoftness * 2;
-    return `
-      position: absolute;
-      left: ${marginPx}px;
-      top: ${startY}px;
-      bottom: 10px;
-      width: ${marginWidthPx}px;
-      background: ${spec.ruling.marginColor};
-      opacity: ${spec.ruling.marginOpacity};
-      box-shadow: ${softness}px 0 ${softness * 2}px rgba(196, 90, 90, ${spec.ruling.marginOpacity * 0.3});
-    `;
-  }
+
+  let { spec = PAPER_SPEC_A4_COLLEGE, widthPx, heightPx }: Props = $props();
+
+  const metrics = $derived(computePageMetrics(spec, widthPx, heightPx));
+
+  const lines = $derived.by(() => {
+    const result: number[] = [];
+    for (let i = 0; i < metrics.linesPerPage; i++) {
+      result.push(metrics.topPx + (i + 1) * metrics.lineSpacing);
+    }
+    return result;
+  });
+
+  const lineWidth = $derived(Math.max(1, metrics.effectiveDpi * 0.008));
+  const marginWidth = $derived(Math.max(1, metrics.effectiveDpi * 0.012));
 </script>
 
 <div class="paper-ruling">
-  <div class="margin-line" style={getMarginStyle()}></div>
+  <div
+    class="margin-line"
+    style="left:{metrics.marginPx}px; top:{metrics.topPx - metrics.lineSpacing * 0.6}px; width:{marginWidth}px; background:{spec.ruling.marginColor}; opacity:{spec.ruling.marginOpacity};"
+  ></div>
+
   {#each lines as y}
-    <div class="ruled-line" style={getLineStyle(y)}></div>
+    <div
+      class="ruled-line"
+      style="left:{metrics.marginPx + 2}px; top:{y}px; height:{lineWidth}px; background:{spec.ruling.lineColor}; opacity:{spec.ruling.lineOpacity};"
+    ></div>
   {/each}
 </div>
 
 <style>
   .paper-ruling {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     pointer-events: none;
     overflow: hidden;
   }
-  .margin-line, .ruled-line {
+
+  .margin-line,
+  .ruled-line {
+    position: absolute;
     mix-blend-mode: multiply;
+  }
+
+  .margin-line {
+    bottom: 12px;
+    border-radius: 1px;
+  }
+
+  .ruled-line {
+    right: 7px;
+    border-radius: 1px;
   }
 </style>

@@ -4,4 +4,14 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [svelte()],
+  server: {
+    host: true,
+    port: 5173,
+    allowedHosts: ['.monkeycode-ai.live'],
+  },
+  preview: {
+    host: true,
+    port: 4173,
+    allowedHosts: ['.monkeycode-ai.live'],
+  },
 })

@@ -3,8 +3,6 @@
   import { PAPER_SPEC_A4_COLLEGE } from './paperConfig';
   
   export let spec: PaperSpec = PAPER_SPEC_A4_COLLEGE;
-  export let widthPx: number;
-  export let heightPx: number;
   
   function getDiffuseGradient(): string {
     const { lighting } = spec;

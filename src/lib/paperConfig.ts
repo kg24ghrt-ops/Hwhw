@@ -85,6 +85,35 @@ export const PAPER_SPEC_A4_COLLEGE: PaperSpec = {
   },
 };
 
+export const PAPER_SPEC_A4_WIDE: PaperSpec = {
+  ...PAPER_SPEC_A4_COLLEGE,
+  rulingSpacingMm: 8.7,
+};
+
+export const PAPER_SPEC_LETTER_COLLEGE: PaperSpec = {
+  ...PAPER_SPEC_A4_COLLEGE,
+  widthMm: 215.9,
+  heightMm: 279.4,
+};
+
+export const PAPER_SPEC_LETTER_WIDE: PaperSpec = {
+  ...PAPER_SPEC_LETTER_COLLEGE,
+  rulingSpacingMm: 8.7,
+};
+
+export interface PaperVariant {
+  id: string;
+  label: string;
+  spec: PaperSpec;
+}
+
+export const PAPER_VARIANTS: PaperVariant[] = [
+  { id: 'a4-college', label: 'A4 · College', spec: PAPER_SPEC_A4_COLLEGE },
+  { id: 'a4-wide', label: 'A4 · Wide', spec: PAPER_SPEC_A4_WIDE },
+  { id: 'letter-college', label: 'Letter · College', spec: PAPER_SPEC_LETTER_COLLEGE },
+  { id: 'letter-wide', label: 'Letter · Wide', spec: PAPER_SPEC_LETTER_WIDE },
+];
+
 export function mmToPx(mm: number, dpi: number = 96): number {
   return mm * dpi / 25.4;
 }
