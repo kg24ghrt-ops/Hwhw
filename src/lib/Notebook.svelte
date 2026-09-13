@@ -26,6 +26,7 @@
     text = $bindable(''),
     fontFamily = 'Caveat',
     inkColor = '#1b2a52',
+    agePreset = 'new',
   }: Props = $props();
 
   let viewport: HTMLDivElement;
@@ -225,7 +226,7 @@
   <div class="pages" style="gap:{PAGE_GAP}px;">
     {#each pages as page, pageIndex (pageIndex)}
       <div class="page-slot">
-        <Paper {spec} width={pageWidth} height={pageHeight}>
+        <Paper {spec} width={pageWidth} height={pageHeight} agePreset={agePreset}>
           <div
             class="ink-layer"
             role="textbox"

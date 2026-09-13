@@ -1,13 +1,34 @@
 /**
  * GPU-Accelerated Paper Texture Renderer
  * Uses WebGL2 for high-performance paper texture generation
- * Supports procedural noise, fiber patterns, and customizable textures
+ * Supports procedural noise, fiber patterns, realistic aging, and customizable textures
  */
+
+export interface PaperAgePreset {
+  name: string;
+  baseColor: string;
+  ageColor: string;
+  ageIntensity: number;
+  yellowing: number;
+  stains: number;
+  stainOpacity: number;
+  stainScale: number;
+  grainAmount: number;
+  edgeDarkening: number;
+  brightness: number;
+}
 
 export interface GPUTextureConfig {
   width: number;
   height: number;
   paperTone: string;
+  ageColor?: string;
+  ageIntensity?: number;
+  yellowing?: number;
+  stains?: number;
+  stainOpacity?: number;
+  stainScale?: number;
+  grainAmount?: number;
   texture: {
     macroFrequency: number;
     macroAmplitude: number;
@@ -38,6 +59,88 @@ export interface GPUTextureRenderer {
   destroy: () => void;
 }
 
+// Paper age presets for realistic aging effects
+export const PAPER_AGE_PRESETS: PaperAgePreset[] = [
+  {
+    name: 'new',
+    baseColor: '#faf9f6',
+    ageColor: '#faf9f6',
+    ageIntensity: 0.0,
+    yellowing: 0.0,
+    stains: 0.0,
+    stainOpacity: 0.0,
+    stainScale: 0.0,
+    grainAmount: 0.02,
+    edgeDarkening: 0.03,
+    brightness: 92,
+  },
+  {
+    name: 'slightly_used',
+    baseColor: '#f8f6f2',
+    ageColor: '#f5e8d0',
+    ageIntensity: 0.15,
+    yellowing: 0.05,
+    stains: 0.02,
+    stainOpacity: 0.05,
+    stainScale: 0.5,
+    grainAmount: 0.03,
+    edgeDarkening: 0.04,
+    brightness: 88,
+  },
+  {
+    name: 'aged',
+    baseColor: '#f0e8d8',
+    ageColor: '#e8d0a8',
+    ageIntensity: 0.35,
+    yellowing: 0.15,
+    stains: 0.05,
+    stainOpacity: 0.12,
+    stainScale: 0.8,
+    grainAmount: 0.05,
+    edgeDarkening: 0.06,
+    brightness: 82,
+  },
+  {
+    name: 'vintage',
+    baseColor: '#e8dcc0',
+    ageColor: '#d8b880',
+    ageIntensity: 0.6,
+    yellowing: 0.25,
+    stains: 0.12,
+    stainOpacity: 0.2,
+    stainScale: 1.2,
+    grainAmount: 0.08,
+    edgeDarkening: 0.08,
+    brightness: 75,
+  },
+  {
+    name: 'old_parchment',
+    baseColor: '#d8c8a0',
+    ageColor: '#c8a870',
+    ageIntensity: 0.8,
+    yellowing: 0.4,
+    stains: 0.2,
+    stainOpacity: 0.28,
+    stainScale: 1.5,
+    grainAmount: 0.12,
+    edgeDarkening: 0.12,
+    brightness: 70,
+  },
+  {
+    name: 'antique',
+    baseColor: '#c8b088',
+    ageColor: '#b09060',
+    ageIntensity: 1.0,
+    yellowing: 0.5,
+    stains: 0.3,
+    stainOpacity: 0.35,
+    stainScale: 2.0,
+    grainAmount: 0.15,
+    edgeDarkening: 0.15,
+    brightness: 65,
+  },
+];
+
 const VERTEX_SHADER_SOURCE = `#version 300 es
 precision highp float;
 
@@ -59,8 +162,15 @@ out vec4 fragColor;
 
 uniform vec2 u_resolution;
 uniform vec3 u_paperTone;
+uniform vec3 u_ageColor;
 uniform float u_time;
 uniform float u_brightness;
+uniform float u_ageIntensity;
+uniform float u_yellowing;
+uniform float u_stains;
+uniform float u_stainOpacity;
+uniform float u_stainScale;
+uniform float u_grainAmount;
 
 // Texture parameters
 uniform float u_macroFrequency;
@@ -78,6 +188,10 @@ uniform float u_diffuseAngle;
 uniform float u_gradientIntensity;
 uniform float u_edgeDarkening;
 
+// Constants
+const float PI = 3.14159265359;
+const float TWO_PI = 6.28318530718;
+
 // Noise functions
 float hash(float n) {
   return fract(sin(n) * 1e4);
@@ -85,6 +199,10 @@ float hash(float n) {
 
 float hash(vec2 p) {
   return fract(1e4 * sin(17.0 * p.x + p.y * 0.1) * (0.1 + abs(sin(p.y * 13.0 + p.x))));
+}
+
+float hash(vec3 p) {
+  return fract(1e4 * sin(17.0 * p.x + p.y * 0.1 + p.z * 0.01) * (0.1 + abs(sin(p.y * 13.0 + p.x + p.z * 0.5))));
 }
 
 float noise(vec2 x) {
@@ -119,17 +237,40 @@ float anisotropicNoise(vec2 p, float frequency, float amplitude, float ratio, fl
   return fbm(rotated, 1.0, amplitude, 4);
 }
 
-// Paper fiber pattern
+// Improved noise with better distribution
+float noise2(vec2 x) {
+  vec2 p = floor(x);
+  vec2 f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  
+  vec2 uv = p + f * (1.0 + 63.0 * f);
+  
+  float a = hash(p);
+  float b = hash(p + vec2(1.0, 0.0));
+  float c = hash(p + vec2(0.0, 1.0));
+  float d = hash(p + vec2(1.0, 1.0));
+  
+  vec2 u = f * vec2(1.0, 0.0);
+  vec2 v = f * vec2(0.0, 1.0);
+  
+  return mix(mix(a, b, u.x), mix(c, d, u.x), v.y);
+}
+
+// Paper fiber pattern with more variation
 float fibers(vec2 uv, float scale, float density) {
   vec2 grid = uv * scale;
   vec2 cell = floor(grid);
   vec2 cellCoord = fract(grid);
   
+  // Random parameters for each cell
   float n = hash(cell + 0.5);
-  float fiberWidth = mix(0.1, 0.4, n);
-  float fiberDir = hash(cell + vec2(0.37, 0.61)) * 3.14159 * 2.0;
+  float fiberWidth = mix(0.08, 0.35, n * n);
+  float fiberDir = hash(cell + vec2(0.37, 0.61)) * TWO_PI;
   
-  vec2 fiberCenter = vec2(n, hash(cell + vec2(0.73, 0.29)));
+  vec2 fiberCenter = vec2(
+    hash(cell + vec2(0.73, 0.29)),
+    hash(cell + vec2(0.11, 0.89))
+  );
   vec2 toCenter = cellCoord - fiberCenter;
   
   float dist = length(toCenter);
@@ -137,57 +278,155 @@ float fibers(vec2 uv, float scale, float density) {
   float proj = dot(toCenter, fiberVec);
   float fiberDist = abs(proj);
   
-  float fiber = smoothstep(fiberWidth + 0.01, fiberWidth, fiberDist);
+  // Create fiber shape with soft edges
+  float fiber = smoothstep(fiberWidth + 0.015, fiberWidth, fiberDist);
+  fiber *= smoothstep(0.0, 0.5, 0.5 - dist);
   
-  return fiber * (1.0 - smoothstep(0.4, 0.5, dist));
+  // Add some irregularity
+  fiber *= 1.0 + noise2(cell * 0.3 + uv * 20.0) * 0.3;
+  
+  return fiber * density;
 }
 
-// Combined texture
+// Water/coffee stain effect
+float stain(vec2 uv, float scale, float seed) {
+  vec2 p = uv * scale * vec2(1.0, 0.8);
+  
+  // Create irregular blob shapes
+  float n1 = noise2(p * 0.5 + seed);
+  float n2 = noise2(p * 1.0 + seed * 2.0);
+  float n3 = noise2(p * 2.0 + seed * 3.0);
+  
+  // Combine for interesting shapes
+  float stainShape = n1 * n2 * (1.0 - n3 * 0.5);
+  
+  // Add radial falloff
+  vec2 center = vec2(0.5);
+  float distFromCenter = length(uv - center);
+  float radial = smoothstep(0.8, 0.3, distFromCenter);
+  
+  // Threshold to create defined stains
+  float threshold = 0.4 + hash(seed) * 0.2;
+  float stainVal = smoothstep(threshold - 0.05, threshold + 0.05, stainShape * radial);
+  
+  // Add edge detail
+  float edgeDetail = noise2(p * 10.0 + seed * 100.0) * 0.2;
+  stainVal *= 1.0 + edgeDetail;
+  
+  return clamp(stainVal, 0.0, 1.0);
+}
+
+// Color variation for realistic paper
+vec3 applyAging(vec2 uv, vec3 baseColor, vec3 ageColor, float ageIntensity, float yellowing) {
+  // Calculate variation based on position and noise
+  float variation = noise2(uv * 50.0) * 0.5 + 0.5;
+  
+  // Mix between base and age color based on intensity and variation
+  vec3 agedColor = mix(baseColor, ageColor, ageIntensity * variation);
+  
+  // Add yellowing effect (warm tone)
+  vec3 yellowTint = vec3(1.0, 0.92, 0.8);
+  agedColor = mix(agedColor, agedColor * yellowTint, yellowing * variation);
+  
+  // Slight color noise for realism
+  float colorNoise = (noise2(uv * 100.0) - 0.5) * 0.03 * ageIntensity;
+  agedColor += vec3(colorNoise, colorNoise * 0.7, colorNoise * 0.4);
+  
+  return clamp(agedColor, 0.0, 1.0);
+}
+
+// Edge wear and tear effect
+float edgeWear(vec2 uv, float intensity) {
+  vec2 centerUV = uv - vec2(0.5);
+  float edgeDist = length(centerUV) * 2.0;
+  
+  // More wear at edges
+  float wear = smoothstep(0.8, 1.0, edgeDist) * intensity;
+  
+  // Add irregular wear patterns
+  wear += noise2(uv * 100.0) * 0.1 * intensity;
+  
+  return clamp(wear, 0.0, 1.0);
+}
+
+// Paper texture with aging
 vec3 paperTexture(vec2 uv) {
   vec2 aspect = vec2(u_resolution.x / u_resolution.y, 1.0);
   vec2 scaledUV = uv * aspect;
   
   // Macro texture (large-scale variations)
-  float macro = anisotropicNoise(scaledUV, u_macroFrequency, u_macroAmplitude, 
+  float macro = anisotropicNoise(scaledUV, u_macroFrequency, u_macroAmplitude,
                                   u_anisotropyRatio, u_anisotropyAngle);
   
   // Meso texture (medium-scale)
   float meso = anisotropicNoise(scaledUV, u_mesoFrequency, u_mesoAmplitude,
                                  u_anisotropyRatio, u_anisotropyAngle);
   
-  // Micro texture (fine grain)
-  float micro = fbm(scaledUV, u_microFrequency, u_microAmplitude, 3);
+  // Micro texture (fine grain) - enhanced for aging
+  float micro = fbm(scaledUV, u_microFrequency, u_microAmplitude * (1.0 + u_grainAmount * 2.0), 4);
   
   // Fiber pattern
-  float fiberPattern = fibers(uv, 200.0, 0.3);
+  float fiberPattern = fibers(uv, 200.0, 0.3 + u_grainAmount);
   
-  // Combine all layers
+  // Combine all layers with enhanced grain
   float texture = macro + meso + micro + (fiberPattern * 0.05);
   
-  // Apply to paper tone
+  // Apply to base color with aging
   vec3 baseColor = u_paperTone;
-  vec3 shaded = baseColor * (1.0 + texture * 0.15);
+  vec3 agedColor = applyAging(uv, baseColor, u_ageColor, u_ageIntensity, u_yellowing);
+  
+  // Apply texture variations
+  vec3 shaded = agedColor * (1.0 + texture * (0.15 + u_grainAmount * 0.1));
   
   return shaded;
 }
 
-// Lighting effects
+// Stain effects
+vec3 applyStains(vec2 uv, vec3 color) {
+  if (u_stains <= 0.0 || u_stainOpacity <= 0.0) {
+    return color;
+  }
+  
+  // Generate multiple stains at different scales
+  float stain1 = stain(uv, u_stainScale * 0.8, 100.0);
+  float stain2 = stain(uv, u_stainScale * 1.2, 200.0);
+  float stain3 = stain(uv, u_stainScale * 0.5, 300.0);
+  
+  // Combine stains
+  float totalStain = max(stain1, max(stain2, stain3));
+  
+  // Stain color - brownish/yellowish
+  vec3 stainColor = vec3(0.6, 0.45, 0.3);
+  
+  // Apply stain
+  vec3 stained = mix(color, stainColor, totalStain * u_stainOpacity * u_stains);
+  
+  // Darken slightly where stains are
+  stained *= 1.0 - totalStain * u_stainOpacity * u_stains * 0.3;
+  
+  return stained;
+}
+
+// Lighting effects with aging
 vec3 applyLighting(vec2 uv, vec3 color) {
   // Diffuse lighting
-  vec2 lightDir = vec2(cos(u_diffuseAngle * 3.14159 / 180.0), 
-                       sin(u_diffuseAngle * 3.14159 / 180.0));
+  vec2 lightDir = vec2(cos(u_diffuseAngle * PI / 180.0), 
+                       sin(u_diffuseAngle * PI / 180.0));
   float diffuse = dot(vec2(0.0, 1.0), lightDir) * u_diffuseIntensity;
   
   // Gradient
   float gradient = uv.y * u_gradientIntensity;
   
-  // Edge darkening (vignette)
+  // Edge darkening (vignette) with wear
   vec2 centerUV = uv - vec2(0.5);
   float edgeDist = length(centerUV) * 2.0;
   float edgeDarken = smoothstep(0.8, 1.2, edgeDist) * u_edgeDarkening;
   
+  // Edge wear effect
+  float wear = edgeWear(uv, u_ageIntensity * 0.5);
+  
   // Combine lighting effects
-  vec3 lit = color * (diffuse + gradient + (1.0 - edgeDarken));
+  vec3 lit = color * (diffuse + gradient + (1.0 - edgeDarken) - wear * 0.15);
   
   return lit;
 }
@@ -195,14 +434,21 @@ vec3 applyLighting(vec2 uv, vec3 color) {
 void main() {
   vec2 uv = v_texCoord;
   
-  // Generate paper texture
+  // Generate paper texture with aging
   vec3 textureColor = paperTexture(uv);
   
+  // Apply stains
+  vec3 stainedColor = applyStains(uv, textureColor);
+  
   // Apply lighting
-  vec3 finalColor = applyLighting(uv, textureColor);
+  vec3 finalColor = applyLighting(uv, stainedColor);
   
   // Brightness adjustment
-  finalColor = pow(finalColor, vec3(1.0 / u_brightness));
+  finalColor = pow(finalColor, vec3(1.0 / (u_brightness / 100.0)));
+  
+  // Add subtle time-based variation for realism
+  float timeVar = sin(u_time * 0.1) * 0.005;
+  finalColor += vec3(timeVar);
   
   fragColor = vec4(finalColor, 1.0);
 }
@@ -324,8 +570,15 @@ export function createGPUTextureRenderer(width: number, height: number): GPUText
   const uniforms = {
     u_resolution: gl.getUniformLocation(program, 'u_resolution'),
     u_paperTone: gl.getUniformLocation(program, 'u_paperTone'),
+    u_ageColor: gl.getUniformLocation(program, 'u_ageColor'),
     u_time: gl.getUniformLocation(program, 'u_time'),
     u_brightness: gl.getUniformLocation(program, 'u_brightness'),
+    u_ageIntensity: gl.getUniformLocation(program, 'u_ageIntensity'),
+    u_yellowing: gl.getUniformLocation(program, 'u_yellowing'),
+    u_stains: gl.getUniformLocation(program, 'u_stains'),
+    u_stainOpacity: gl.getUniformLocation(program, 'u_stainOpacity'),
+    u_stainScale: gl.getUniformLocation(program, 'u_stainScale'),
+    u_grainAmount: gl.getUniformLocation(program, 'u_grainAmount'),
     u_macroFrequency: gl.getUniformLocation(program, 'u_macroFrequency'),
     u_macroAmplitude: gl.getUniformLocation(program, 'u_macroAmplitude'),
     u_mesoFrequency: gl.getUniformLocation(program, 'u_mesoFrequency'),
@@ -354,8 +607,17 @@ export function createGPUTextureRenderer(width: number, height: number): GPUText
     // Set uniforms
     gl.uniform2f(uniforms.u_resolution, config.width, config.height);
     gl.uniform3f(uniforms.u_paperTone, ...hexToRgb(config.paperTone));
+    gl.uniform3f(uniforms.u_ageColor, ...hexToRgb(config.ageColor || config.paperTone));
     gl.uniform1f(uniforms.u_time, time);
-    gl.uniform1f(uniforms.u_brightness, config.brightness / 100);
+    gl.uniform1f(uniforms.u_brightness, config.brightness || 92.0);
+    
+    // Aging parameters
+    gl.uniform1f(uniforms.u_ageIntensity, config.ageIntensity || 0.0);
+    gl.uniform1f(uniforms.u_yellowing, config.yellowing || 0.0);
+    gl.uniform1f(uniforms.u_stains, config.stains || 0.0);
+    gl.uniform1f(uniforms.u_stainOpacity, config.stainOpacity || 0.0);
+    gl.uniform1f(uniforms.u_stainScale, config.stainScale || 1.0);
+    gl.uniform1f(uniforms.u_grainAmount, config.grainAmount || 0.02);
     
     // Texture parameters
     gl.uniform1f(uniforms.u_macroFrequency, config.texture.macroFrequency);
@@ -415,4 +677,29 @@ export function releaseSharedGPUTextureRenderer() {
     sharedRenderer.destroy();
     sharedRenderer = null;
   }
+}
+
+// Helper function to apply aging preset to config
+export function applyAgingPreset(config: GPUTextureConfig, preset: PaperAgePreset): GPUTextureConfig {
+  return {
+    ...config,
+    paperTone: preset.baseColor,
+    ageColor: preset.ageColor,
+    ageIntensity: preset.ageIntensity,
+    yellowing: preset.yellowing,
+    stains: preset.stains,
+    stainOpacity: preset.stainOpacity,
+    stainScale: preset.stainScale,
+    grainAmount: preset.grainAmount,
+    lighting: {
+      ...config.lighting,
+      edgeDarkening: preset.edgeDarkening,
+    },
+    brightness: preset.brightness,
+  };
+}
+
+// Helper to get preset by name
+export function getAgingPreset(name: string): PaperAgePreset | undefined {
+  return PAPER_AGE_PRESETS.find(p => p.name === name);
 }

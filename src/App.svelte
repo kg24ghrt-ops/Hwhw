@@ -18,10 +18,20 @@
     { id: 'green', color: '#1f4d33', label: 'Green ink' },
   ];
 
+  const AGE_PRESETS = [
+    { id: 'new', label: 'New' },
+    { id: 'slightly_used', label: 'Slightly Used' },
+    { id: 'aged', label: 'Aged' },
+    { id: 'vintage', label: 'Vintage' },
+    { id: 'old_parchment', label: 'Old Parchment' },
+    { id: 'antique', label: 'Antique' },
+  ];
+
   let paperId = $state('a4-college');
   let hand = $state('Caveat');
   let ink = $state('#1b2a52');
   let text = $state('');
+  let agePreset = $state('new');
   let loaded = $state(false);
 
   const spec = $derived(PAPER_VARIANTS.find((variant) => variant.id === paperId)?.spec ?? PAPER_VARIANTS[0].spec);
@@ -35,6 +45,7 @@
         if (typeof saved.paperId === 'string') paperId = saved.paperId;
         if (typeof saved.hand === 'string') hand = saved.hand;
         if (typeof saved.ink === 'string') ink = saved.ink;
+        if (typeof saved.agePreset === 'string') agePreset = saved.agePreset;
       }
     } catch {
       /* ignore malformed storage */
@@ -45,7 +56,7 @@
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
   $effect(() => {
-    const snapshot = JSON.stringify({ text, paperId, hand, ink });
+    const snapshot = JSON.stringify({ text, paperId, hand, ink, agePreset });
     if (!loaded) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
@@ -107,6 +118,15 @@
       <span class="tray-label">Paper</span>
       <select bind:value={paperId}>
         {#each PAPER_VARIANTS as option (option.id)}
+          <option value={option.id}>{option.label}</option>
+        {/each}
+      </select>
+    </label>
+
+    <label class="tray-group">
+      <span class="tray-label">Age</span>
+      <select bind:value={agePreset}>
+        {#each AGE_PRESETS as option (option.id)}
           <option value={option.id}>{option.label}</option>
         {/each}
       </select>
