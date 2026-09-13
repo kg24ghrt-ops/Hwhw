@@ -2,7 +2,9 @@
   import { type PaperSpec } from './paperConfig';
   import { PAPER_SPEC_A4_COLLEGE } from './paperConfig';
   
-  export let spec: PaperSpec = PAPER_SPEC_A4_COLLEGE;
+  // Runes-compatible props access
+  declare function $props<T>(): T;
+  const { spec = PAPER_SPEC_A4_COLLEGE } = $props<{ spec?: PaperSpec }>();
   
   // Generate random seed based on paper spec for consistent but varied lighting
   const lightingSeed = $derived(Math.abs(
@@ -100,7 +102,7 @@
     if (wrinkleIntensity < 0.01) return 'none';
     
     // Create a subtle noise pattern for paper surface variations
-    return `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='wrinkles'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='2' seed='${lightingSeed}'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 ${wrinkleIntensity * 0.1} 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wrinkles)'/%3E%3C/svg%3E")`;
+    return `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='wrinkles'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOcta[...]`;
   }
   
   function getLightFlicker(): string {
