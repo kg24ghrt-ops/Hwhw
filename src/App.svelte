@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Notebook from './lib/Notebook.svelte';
+  import GPUPaper from './lib/GPUPaper.svelte';
   import { PAPER_VARIANTS } from './lib/paperConfig';
 
   const HANDS = [
@@ -18,11 +19,12 @@
     { id: 'green', color: '#1f4d33', label: 'Green ink' },
   ];
 
-  let paperId = $state('a4-college');
+  let paperId = $state('a5-gpu');
   let hand = $state('Caveat');
   let ink = $state('#1b2a52');
   let text = $state('');
   let loaded = $state(false);
+  let useGPUMode = $state(true);
 
   const spec = $derived(PAPER_VARIANTS.find((variant) => variant.id === paperId)?.spec ?? PAPER_VARIANTS[0].spec);
 
@@ -69,14 +71,26 @@
 <div class="app">
   <header class="brand">
     <span class="brand-mark">Notebook</span>
-    <span class="brand-sub">paper you can type on</span>
+    <span class="brand-sub">GPU-accelerated paper</span>
   </header>
 
   <main class="desk">
-    <Notebook {spec} bind:text fontFamily={hand} inkColor={ink} />
+    {#if useGPUMode}
+      <GPUPaper bind:text fontFamily={hand} inkColor={ink} />
+    {:else}
+      <Notebook {spec} bind:text fontFamily={hand} inkColor={ink} />
+    {/if}
   </main>
 
   <footer class="tray" aria-label="Stationery">
+    <label class="tray-group">
+      <span class="tray-label">Mode</span>
+      <select bind:value={useGPUMode}>
+        <option value={true}>GPU Renderer</option>
+        <option value={false}>Classic</option>
+      </select>
+    </label>
+
     <label class="tray-group">
       <span class="tray-label">Hand</span>
       <select bind:value={hand}>
@@ -102,15 +116,6 @@
         {/each}
       </div>
     </div>
-
-    <label class="tray-group">
-      <span class="tray-label">Paper</span>
-      <select bind:value={paperId}>
-        {#each PAPER_VARIANTS as option (option.id)}
-          <option value={option.id}>{option.label}</option>
-        {/each}
-      </select>
-    </label>
 
     <button type="button" class="erase" onclick={clearPage}>New page</button>
   </footer>
