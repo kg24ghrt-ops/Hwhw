@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { createGPUTextureRenderer, type GPUTextureConfig } from './PaperTextureGPU';
+  import { createGPUTextureRenderer, type GPUTextureConfig, type PaperAgePreset, PAPER_AGE_PRESETS, getAgingPreset, applyAgingPreset } from './PaperTextureGPU';
   import type { PaperSpec } from './paperConfig';
 
   interface Props {
@@ -8,14 +8,18 @@
     width?: number;
     height?: number;
     useGPU?: boolean;
+    agePreset?: string;
   }
 
-  let { spec, width = 800, height = 600, useGPU = true } = $props();
+  let { spec, width = 800, height = 600, useGPU = true, agePreset = 'new' } = $props();
   
   let gpuRenderer = $state<any>(null);
   let canvas = $state<HTMLCanvasElement | null>(null);
   let gpuSupported = $state(true);
   let fallbackMode = $state(false);
+  
+  // Get the aging preset
+  const currentPreset = $derived(PAPER_AGE_PRESETS.find(p => p.name === agePreset) || PAPER_AGE_PRESETS[0]);
 
   // Fallback SVG textures (original implementation)
   const grainTile = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="200" height="200" filter="url(#g)"/></svg>`;
@@ -76,6 +80,13 @@
         width,
         height,
         paperTone: spec.paperTone || '#faf9f6',
+        ageColor: currentPreset.ageColor,
+        ageIntensity: currentPreset.ageIntensity,
+        yellowing: currentPreset.yellowing,
+        stains: currentPreset.stains,
+        stainOpacity: currentPreset.stainOpacity,
+        stainScale: currentPreset.stainScale,
+        grainAmount: currentPreset.grainAmount,
         texture: spec.texture || {
           macroFrequency: 0.0005,
           macroAmplitude: 0.01,
@@ -86,14 +97,11 @@
           anisotropyRatio: 1.15,
           anisotropyAngle: 0,
         },
-        lighting: spec.lighting || {
-          diffuseIntensity: 0.95,
-          diffuseAngle: -30,
-          gradientIntensity: 0.02,
-          edgeDarkening: 0.03,
-          contactShadowOpacity: 0.02,
-          contactShadowBlur: 8,
+        lighting: {
+          ...spec.lighting,
+          edgeDarkening: currentPreset.edgeDarkening,
         },
+        brightness: currentPreset.brightness,
       };
       
       gpuRenderer.update(config);

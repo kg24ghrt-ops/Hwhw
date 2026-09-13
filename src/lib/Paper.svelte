@@ -9,10 +9,11 @@
     spec?: PaperSpec;
     width?: number;
     height?: number;
+    agePreset?: string;
     children?: import('svelte').Snippet;
   }
 
-  let { spec = PAPER_SPEC_A4_COLLEGE, width = 793, height = 1123, children }: Props = $props();
+  let { spec = PAPER_SPEC_A4_COLLEGE, width = 793, height = 1123, agePreset = 'new', children }: Props = $props();
 
   const metrics = $derived(computePageMetrics(spec, width, height));
   const edgeWidth = $derived(Math.max(1, metrics.effectiveDpi * 0.02));
@@ -21,7 +22,7 @@
 <div class="paper-object" style="width:{width}px;height:{height}px;">
   <div class="paper-substrate" style="background-color:{spec.paperTone};"></div>
 
-  <PaperTexture />
+  <PaperTexture spec={spec} agePreset={agePreset} />
   <PaperLighting spec={spec} />
   <PaperRuling spec={spec} widthPx={width} heightPx={height} />
 
