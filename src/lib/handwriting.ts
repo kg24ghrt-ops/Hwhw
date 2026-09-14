@@ -10,8 +10,9 @@ function getCtx(): CanvasRenderingContext2D | null {
   return ctx;
 }
 
-function isMyanmarText(text: string): boolean {
-  const myanmarRange = /[\u1000-\u109F]/;
+// Exported for use in other modules - uses the full Myanmar Unicode range
+export function isMyanmarText(text: string): boolean {
+  const myanmarRange = /[\u1000-\u109F\uA9E0-\uA9FF\uAA60-\uAA7F]/;
   return myanmarRange.test(text);
 }
 

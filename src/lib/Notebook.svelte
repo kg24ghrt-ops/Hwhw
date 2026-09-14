@@ -10,6 +10,7 @@
     measure,
     offsetFromX,
     wrapText,
+    isMyanmarText,
     type VisualLine,
   } from './handwriting';
   import type { PaperSpec } from './paperConfig';
@@ -21,6 +22,7 @@
     fontFamily?: string;
     inkColor?: string;
     fontWeight?: number;
+    agePreset?: string;
   }
 
   let {
@@ -67,6 +69,13 @@
   const metrics = $derived(computePageMetrics(spec, pageWidth, pageHeight));
   const fontSize = $derived(metrics.lineSpacing * 0.82);
   const fontString = $derived(`${fontWeight} ${fontSize}px "${fontFamily}", cursive`);
+  
+  // Use Noto Sans Myanmar for Myanmar text
+  const myanmarFontString = $derived(`${fontWeight} ${fontSize}px "Noto Sans Myanmar"`);
+  
+  const effectiveFontString = $derived.by(() => {
+    return isMyanmarText(text) ? myanmarFontString : fontString;
+  });
   const fontMetrics = $derived.by(() => {
     fontVersion;
     return getFontMetrics(fontString);
@@ -79,7 +88,7 @@
 
   const lines = $derived.by(() => {
     fontVersion;
-    return wrapText(text, metrics.contentWidth, fontString);
+    return wrapText(text, metrics.contentWidth, effectiveFontString);
   });
 
   const pages = $derived.by(() => {
@@ -100,8 +109,10 @@
     const weight = fontWeight;
     let cancelled = false;
     if (typeof document !== 'undefined' && 'fonts' in document) {
-      document.fonts
-        .load(`${weight} ${size}px "${font}"`)
+      Promise.all([
+        document.fonts.load(`${weight} ${size}px "${font}"`),
+        document.fonts.load(`${weight} ${size}px "Noto Sans Myanmar"`),
+      ])
         .then(() => document.fonts.ready)
         .then(() => {
           if (!cancelled) fontVersion++;
@@ -282,7 +293,7 @@
   }
 
   function widthOf(slice: string): number {
-    return measure(slice, fontString);
+    return measure(slice, effectiveFontString);
   }
 
   function handleKeyDown(event: KeyboardEvent) {
@@ -340,24 +351,31 @@
             role="textbox"
             tabindex="-1"
             aria-label="Notebook page"
-            onpointerdown={(event) => handlePointerDown(event, pageIndex)}
+            onpointerdown={(event: PointerEvent) => handlePointerDown(event, pageIndex)}
             ondblclick={handleDoubleClick}
           >
             {#each page as line, lineInPage (line.start)}
               {@const globalIndex = pageIndex * metrics.linesPerPage + lineInPage}
               {@const decoration = lineStyle(globalIndex, fontSize)}
+              {@const isMyanmar = isMyanmarText(line.text)}
               <div
                 class="vline"
-                style="top:{lineInPage * metrics.lineSpacing}px; height:{metrics.lineSpacing}px; line-height:{metrics.lineSpacing}px; font-size:{fontSize}px; font-family:{fontString}; color:{inkColor}; transform: translateY({baselineDrop}px) rotate({decoration.tilt}deg) translateX({decoration.dx}px);"
+                style="top:{lineInPage * metrics.lineSpacing}px; height:{metrics.lineSpacing}px; line-height:{metrics.lineSpacing}px; font-size:{fontSize}px; font-family:{effectiveFontString}; color:{inkColor}; transform: translateY({baselineDrop}px) rotate({decoration.tilt}deg) translateX({decoration.dx}px);"
               >
-                {#each Array(line.text.length) as _, charIndex (charIndex)}
-                  {@const glyph = glyphStyle(line.start + charIndex, fontSize)}
-                  <span
-                    class="ch"
-                    style="transform: rotate({glyph.rotate}deg) translate({glyph.dx}px, {glyph.dy}px) scale({glyph.scale}); opacity:{glyph.opacity};"
-                    >{line.text[charIndex]}</span
-                  >
-                {/each}
+                {#if isMyanmar}
+                  <!-- Myanmar: render the whole line as one unit to preserve clusters -->
+                  <span class="myanmar-text">{line.text}</span>
+                {:else}
+                  <!-- English/Latin: keep existing per-glyph humanization -->
+                  {#each Array(line.text.length) as _, charIndex (charIndex)}
+                    {@const glyph = glyphStyle(line.start + charIndex, fontSize)}
+                    <span
+                      class="ch"
+                      style="transform: rotate({glyph.rotate}deg) translate({glyph.dx}px, {glyph.dy}px) scale({glyph.scale}); opacity:{glyph.opacity};"
+                      >{line.text[charIndex]}</span
+                    >
+                  {/each}
+                {/if}
               </div>
             {/each}
 
@@ -471,6 +489,12 @@
     will-change: transform;
     text-shadow: 0 0 0.4px rgba(10, 14, 30, 0.25);
     animation: ink-write 120ms ease-out both;
+  }
+
+  .myanmar-text {
+    display: inline-block;
+    white-space: pre;
+    /* No per-glyph noise for Myanmar - let the browser shape correctly */
   }
 
   @keyframes ink-write {
