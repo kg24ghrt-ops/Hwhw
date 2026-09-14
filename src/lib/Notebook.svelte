@@ -42,6 +42,10 @@
   let selEnd = $state(0);
   let zoomLevel = $state(1);
   let isZoomed = $state(false);
+  let pinchStartDistance = $state(0);
+  let pinchStartZoom = $state(1);
+  let lastWheelTime = $state(0);
+  let wheelDelta = $state(0);
 
   const PAGE_GAP = 36;
 
@@ -176,6 +180,70 @@
   let lastClickTime = $state(0);
   let clickCount = $state(0);
 
+  function getPinchDistance(event: PointerEvent | TouchEvent): number {
+    if ('touches' in event && event.touches.length >= 2) {
+      const dx = event.touches[0].clientX - event.touches[1].clientX;
+      const dy = event.touches[0].clientY - event.touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+    return 0;
+  }
+
+  function handleTouchStart(event: TouchEvent) {
+    if (event.touches.length === 2) {
+      pinchStartDistance = getPinchDistance(event);
+      pinchStartZoom = zoomLevel;
+    }
+  }
+
+  function handleTouchMove(event: TouchEvent) {
+    if (event.touches.length === 2 && pinchStartDistance > 0) {
+      event.preventDefault();
+      const currentDistance = getPinchDistance(event);
+      const scale = currentDistance / pinchStartDistance;
+      const newZoom = Math.max(1, Math.min(4, pinchStartZoom * scale));
+      
+      if (newZoom > 1.2 && !isZoomed) {
+        isZoomed = true;
+      } else if (newZoom <= 1.1 && isZoomed) {
+        isZoomed = false;
+      }
+      
+      zoomLevel = newZoom;
+    }
+  }
+
+  function handleTouchEnd(event: TouchEvent) {
+    if (event.touches.length < 2) {
+      pinchStartDistance = 0;
+    }
+  }
+
+  function handleWheel(event: WheelEvent) {
+    if (!event.ctrlKey && !event.metaKey) return;
+    
+    event.preventDefault();
+    
+    const now = Date.now();
+    if (now - lastWheelTime > 150) {
+      wheelDelta = 0;
+    }
+    
+    wheelDelta -= event.deltaY;
+    lastWheelTime = now;
+    
+    const sensitivity = 0.002;
+    const newZoom = Math.max(1, Math.min(4, zoomLevel + wheelDelta * sensitivity));
+    
+    if (newZoom > 1.2 && !isZoomed) {
+      isZoomed = true;
+    } else if (newZoom <= 1.1 && isZoomed) {
+      isZoomed = false;
+    }
+    
+    zoomLevel = newZoom;
+  }
+
   function handleDoubleClick(event: PointerEvent) {
     const now = Date.now();
     const timeDiff = now - lastClickTime;
@@ -235,9 +303,9 @@
   }
 </script>
 
-<svelte:window onkeydown={focusFromWindow} />
+<svelte:window onkeydown={focusFromWindow} onwheel={handleWheel} />
 
-<div class="notebook" bind:this={viewport}>
+<div class="notebook" bind:this={viewport} ontouchstart={handleTouchStart} ontouchmove={handleTouchMove} ontouchend={handleTouchEnd} role="region" aria-label="Notebook viewport">
   <textarea
     class="capture"
     bind:this={textarea}
