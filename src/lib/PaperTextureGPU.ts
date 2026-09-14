@@ -47,6 +47,7 @@ export interface GPUTextureConfig {
     contactShadowOpacity: number;
     contactShadowBlur: number;
   };
+  brightness?: number;
 }
 
 export interface GPUTextureRenderer {

@@ -135,7 +135,7 @@
       height={height}
       style="width:100%; height:100%; display:block;"
       aria-label="GPU-accelerated paper texture"
-    />
+    ></canvas>
   {:else}
     <!-- Fallback SVG textures -->
     <div class="texture-layer grain" style="background-image:{grainUrl};"></div>

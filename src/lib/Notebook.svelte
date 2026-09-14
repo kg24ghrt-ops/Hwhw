@@ -14,6 +14,7 @@
     type VisualLine,
   } from './handwriting';
   import type { PaperSpec } from './paperConfig';
+  import type { PageRenderData } from './export';
   import '@fontsource/noto-sans-myanmar';
 
   interface Props {
@@ -170,7 +171,7 @@
     textarea.focus({ preventScroll: true });
   }
 
-  function handlePointerDown(event: PointerEvent, pageIndex: number) {
+  function handlePointerDown(event: PointerEvent | MouseEvent, pageIndex: number) {
     const element = event.currentTarget as HTMLElement;
     const rect = element.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -313,6 +314,53 @@
     selEnd = next;
     queueMicrotask(() => textarea?.setSelectionRange(next, next));
   }
+
+  // Export functions exposed to parent component
+  async function exportPage(options: { scale?: number; format?: 'png' | 'jpeg' } = {}) {
+    const { exportSinglePage } = await import('./export');
+    const pageData = getPageRenderData(0);
+    if (!pageData) return;
+    
+    const filename = `notebook-page-1.${options.format ?? 'png'}`;
+    await exportSinglePage(pageData, filename, options);
+  }
+
+  async function exportAllPages(options: { scale?: number; format?: 'png' | 'jpeg' } = {}) {
+    const { exportAllPages: exportAll } = await import('./export');
+    const allPageData = getAllPagesRenderData();
+    if (!allPageData || allPageData.length === 0) return;
+    
+    await exportAll(allPageData, options);
+  }
+
+  function getPageRenderData(pageIndex: number): PageRenderData | null {
+    const perPage = metrics.linesPerPage;
+    const pageLines = pages[pageIndex];
+    if (!pageLines) return null;
+
+    return {
+      spec,
+      width: pageWidth,
+      height: pageHeight,
+      lines: pageLines,
+      inkColor,
+      fontFamily: effectiveFontString.split('"')[1] || fontFamily,
+      fontWeight,
+      fontSize,
+      lineSpacing: metrics.lineSpacing,
+      baselineDrop,
+      agePreset,
+    };
+  }
+
+  function getAllPagesRenderData(): PageRenderData[] {
+    return pages.map((_, index) => getPageRenderData(index)).filter((p): p is PageRenderData => p !== null);
+  }
+
+  // Expose methods to parent via bind:this
+  $effect(() => {
+    // Methods are available on the component instance automatically in Svelte 5
+  });
 </script>
 
 <svelte:window onkeydown={focusFromWindow} onwheel={handleWheel} />
@@ -351,7 +399,7 @@
             role="textbox"
             tabindex="-1"
             aria-label="Notebook page"
-            onpointerdown={(event: PointerEvent) => handlePointerDown(event, pageIndex)}
+            onpointerdown={(event) => handlePointerDown(event, pageIndex)}
             ondblclick={handleDoubleClick}
           >
             {#each page as line, lineInPage (line.start)}
