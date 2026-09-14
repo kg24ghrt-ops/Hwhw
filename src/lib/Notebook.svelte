@@ -19,6 +19,7 @@
     text?: string;
     fontFamily?: string;
     inkColor?: string;
+    fontWeight?: number;
   }
 
   let {
@@ -26,6 +27,7 @@
     text = $bindable(''),
     fontFamily = 'Caveat',
     inkColor = '#1b2a52',
+    fontWeight = 400,
     agePreset = 'new',
   }: Props = $props();
 
@@ -57,7 +59,7 @@
   const pageHeight = $derived(pageWidth * (spec.heightMm / spec.widthMm));
   const metrics = $derived(computePageMetrics(spec, pageWidth, pageHeight));
   const fontSize = $derived(metrics.lineSpacing * 0.82);
-  const fontString = $derived(`${fontSize}px "${fontFamily}", cursive`);
+  const fontString = $derived(`${fontWeight} ${fontSize}px "${fontFamily}", cursive`);
   const fontMetrics = $derived.by(() => {
     fontVersion;
     return getFontMetrics(fontString);
@@ -88,10 +90,11 @@
   $effect(() => {
     const font = fontFamily;
     const size = fontSize;
+    const weight = fontWeight;
     let cancelled = false;
     if (typeof document !== 'undefined' && 'fonts' in document) {
       document.fonts
-        .load(`${size}px "${font}"`)
+        .load(`${weight} ${size}px "${font}"`)
         .then(() => document.fonts.ready)
         .then(() => {
           if (!cancelled) fontVersion++;
