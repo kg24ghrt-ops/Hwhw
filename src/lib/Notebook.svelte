@@ -40,6 +40,8 @@
   let focused = $state(false);
   let selStart = $state(0);
   let selEnd = $state(0);
+  let zoomLevel = $state(1);
+  let isZoomed = $state(false);
 
   const PAGE_GAP = 36;
 
@@ -53,7 +55,7 @@
       width *= scale;
       height = maxHeight;
     }
-    return width;
+    return width * zoomLevel;
   });
 
   const pageHeight = $derived(pageWidth * (spec.heightMm / spec.widthMm));
@@ -127,7 +129,10 @@
     const pageTop = pageIndex * (pageHeight + PAGE_GAP);
     const viewTop = viewport.scrollTop;
     const viewBottom = viewTop + viewport.clientHeight;
-    if (pageTop - 16 < viewTop) {
+    const targetScroll = pageTop - viewport.clientHeight / 2 + pageHeight / 2;
+    if (isZoomed) {
+      viewport.scrollTo({ top: targetScroll - 100, behavior: 'smooth' });
+    } else if (pageTop - 16 < viewTop) {
       viewport.scrollTo({ top: Math.max(0, pageTop - 24), behavior: 'smooth' });
     } else if (pageTop + pageHeight + 24 > viewBottom) {
       viewport.scrollTo({ top: pageTop + pageHeight + 24 - viewport.clientHeight, behavior: 'smooth' });
@@ -166,6 +171,37 @@
     focusEditor();
     textarea?.setSelectionRange(position, position);
     event.preventDefault();
+  }
+
+  let lastClickTime = $state(0);
+  let clickCount = $state(0);
+
+  function handleDoubleClick(event: PointerEvent) {
+    const now = Date.now();
+    const timeDiff = now - lastClickTime;
+    
+    if (timeDiff < 300) {
+      clickCount++;
+    } else {
+      clickCount = 1;
+    }
+    lastClickTime = now;
+
+    if (clickCount >= 2) {
+      isZoomed = !isZoomed;
+      zoomLevel = isZoomed ? 2.5 : 1;
+      clickCount = 0;
+      
+      if (isZoomed && viewport && caret.line !== undefined) {
+        const perPage = metrics.linesPerPage;
+        const pageIndex = Math.floor(caret.line / perPage);
+        const pageTop = pageIndex * (pageHeight + PAGE_GAP);
+        const targetScroll = pageTop - viewport.clientHeight / 2 + pageHeight / 2;
+        setTimeout(() => {
+          viewport.scrollTo({ top: targetScroll - 100, behavior: 'smooth' });
+        }, 50);
+      }
+    }
   }
 
   function focusFromWindow(event: KeyboardEvent) {
@@ -236,6 +272,7 @@
             tabindex="-1"
             aria-label="Notebook page"
             onpointerdown={(event) => handlePointerDown(event, pageIndex)}
+            ondblclick={handleDoubleClick}
           >
             {#each page as line, lineInPage (line.start)}
               {@const globalIndex = pageIndex * metrics.linesPerPage + lineInPage}

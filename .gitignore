@@ -1,37 +1,5 @@
 ```
-# Dependencies
-node_modules/
-pnpm-lock.yaml
-package-lock.json
-bun.lock
-
 # Build artifacts
 dist/
 build/
-target/
-
-# Vite specific
-node_modules/.vite/
-
-# Environment
-.env
-.env.local
-.env.*
-
-# Logs
-*.log
-
-# Temporary files
-*.tmp
-*.swp
-
-# IDE
-.vscode/
-.idea/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
 ```
