@@ -27,7 +27,7 @@
     text = $bindable(''),
     fontFamily = 'Caveat',
     inkColor = '#1b2a52',
-    fontWeight = 400,
+    fontWeight = 500,
     agePreset = 'new',
   }: Props = $props();
 
