@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import Notebook from './lib/Notebook.svelte';
   import { PAPER_VARIANTS } from './lib/paperConfig';
+  import type { PageRenderData } from './lib/export';
 
   const HANDS = [
     { id: 'Caveat', label: 'Caveat' },
@@ -34,6 +35,7 @@
   let text = $state('');
   let agePreset = $state('new');
   let loaded = $state(false);
+  let notebookRef: any = null;
 
   const spec = $derived(PAPER_VARIANTS.find((variant) => variant.id === paperId)?.spec ?? PAPER_VARIANTS[0].spec);
 
@@ -76,6 +78,26 @@
       text = '';
     }
   }
+
+  async function exportCurrentPage() {
+    if (!notebookRef || !notebookRef.exportPage) return;
+    try {
+      await notebookRef.exportPage({ scale: 2, format: 'png' });
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export page. Please try again.');
+    }
+  }
+
+  async function exportAllPages() {
+    if (!notebookRef || !notebookRef.exportAllPages) return;
+    try {
+      await notebookRef.exportAllPages({ scale: 2, format: 'png' });
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export pages. Please try again.');
+    }
+  }
 </script>
 
 <div class="app">
@@ -85,7 +107,7 @@
   </header>
 
   <main class="desk">
-    <Notebook {spec} bind:text fontFamily={hand} inkColor={ink} fontWeight={500} />
+    <Notebook bind:this={notebookRef} {spec} bind:text fontFamily={hand} inkColor={ink} fontWeight={500} {agePreset} />
   </main>
 
   <footer class="tray" aria-label="Stationery">
@@ -132,6 +154,16 @@
         {/each}
       </select>
     </label>
+
+    <div class="tray-group">
+      <span class="tray-label">Export</span>
+      <button type="button" class="export-btn" onclick={exportCurrentPage} title="Export current page as PNG">
+        This page
+      </button>
+      <button type="button" class="export-btn" onclick={exportAllPages} title="Export all pages as PNG files">
+        All pages
+      </button>
+    </div>
 
     <button type="button" class="erase" onclick={clearPage}>New page</button>
   </footer>
@@ -257,6 +289,21 @@
 
   .erase:hover,
   select:hover {
+    background: rgba(255, 255, 255, 0.98);
+  }
+
+  .export-btn {
+    font-family: Georgia, serif;
+    font-size: 12px;
+    color: #43392c;
+    padding: 6px 12px;
+    border-radius: 9px;
+    border: 1px solid rgba(120, 106, 86, 0.35);
+    background: rgba(255, 255, 255, 0.75);
+    cursor: pointer;
+  }
+
+  .export-btn:hover {
     background: rgba(255, 255, 255, 0.98);
   }
 

@@ -2,9 +2,7 @@
   import { type PaperSpec } from './paperConfig';
   import { PAPER_SPEC_A4_COLLEGE } from './paperConfig';
   
-  // Runes-compatible props access
-  declare function $props<T>(): T;
-  const { spec = PAPER_SPEC_A4_COLLEGE } = $props<{ spec?: PaperSpec }>();
+  let { spec = PAPER_SPEC_A4_COLLEGE }: { spec?: PaperSpec } = $props();
   
   // Generate random seed based on paper spec for consistent but varied lighting
   const lightingSeed = $derived(Math.abs(
