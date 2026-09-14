@@ -84,7 +84,7 @@
   </header>
 
   <main class="desk">
-    <Notebook {spec} bind:text fontFamily={hand} inkColor={ink} />
+    <Notebook {spec} bind:text fontFamily={hand} inkColor={ink} fontWeight={500} />
   </main>
 
   <footer class="tray" aria-label="Stationery">
