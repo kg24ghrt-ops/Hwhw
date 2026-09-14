@@ -3,6 +3,8 @@
 node_modules/
 # Build artifacts
 dist/
-# Temporary files
-*.tmp
+# Environment
+.env
+.env.local
+.env.*
 ```

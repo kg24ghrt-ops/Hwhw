@@ -13,6 +13,7 @@
     type VisualLine,
   } from './handwriting';
   import type { PaperSpec } from './paperConfig';
+  import '@fontsource/noto-sans-myanmar';
 
   interface Props {
     spec: PaperSpec;

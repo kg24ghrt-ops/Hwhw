@@ -10,6 +10,11 @@ function getCtx(): CanvasRenderingContext2D | null {
   return ctx;
 }
 
+function isMyanmarText(text: string): boolean {
+  const myanmarRange = /[\u1000-\u109F]/;
+  return myanmarRange.test(text);
+}
+
 export function measure(text: string, font: string): number {
   const c = getCtx();
   if (!c) return text.length * 8;
