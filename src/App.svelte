@@ -9,6 +9,7 @@
     { id: 'Patrick Hand', label: 'Patrick Hand' },
     { id: 'Shadows Into Light', label: 'Shadows' },
     { id: 'Homemade Apple', label: 'Homemade Apple' },
+    { id: 'Noto Sans Myanmar', label: 'Myanmar' },
   ];
 
   const INKS = [
