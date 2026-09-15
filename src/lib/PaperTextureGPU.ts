@@ -599,57 +599,57 @@ export function createGPUTextureRenderer(width: number, height: number): GPUText
   function update(config: GPUTextureConfig) {
     time += 0.016; // ~60fps
     
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    gl.viewport(0, 0, width, height);
+    gl!.bindFramebuffer(gl!.FRAMEBUFFER, framebuffer!);
+    gl!.viewport(0, 0, width, height);
     
-    gl.useProgram(program);
-    gl.bindVertexArray(vao);
+    gl!.useProgram(program!);
+    gl!.bindVertexArray(vao!);
     
     // Set uniforms
-    gl.uniform2f(uniforms.u_resolution, config.width, config.height);
-    gl.uniform3f(uniforms.u_paperTone, ...hexToRgb(config.paperTone));
-    gl.uniform3f(uniforms.u_ageColor, ...hexToRgb(config.ageColor || config.paperTone));
-    gl.uniform1f(uniforms.u_time, time);
-    gl.uniform1f(uniforms.u_brightness, config.brightness || 92.0);
+    gl!.uniform2f(uniforms.u_resolution, config.width, config.height);
+    gl!.uniform3f(uniforms.u_paperTone, ...hexToRgb(config.paperTone));
+    gl!.uniform3f(uniforms.u_ageColor, ...hexToRgb(config.ageColor || config.paperTone));
+    gl!.uniform1f(uniforms.u_time, time);
+    gl!.uniform1f(uniforms.u_brightness, config.brightness || 92.0);
     
     // Aging parameters
-    gl.uniform1f(uniforms.u_ageIntensity, config.ageIntensity || 0.0);
-    gl.uniform1f(uniforms.u_yellowing, config.yellowing || 0.0);
-    gl.uniform1f(uniforms.u_stains, config.stains || 0.0);
-    gl.uniform1f(uniforms.u_stainOpacity, config.stainOpacity || 0.0);
-    gl.uniform1f(uniforms.u_stainScale, config.stainScale || 1.0);
-    gl.uniform1f(uniforms.u_grainAmount, config.grainAmount || 0.02);
+    gl!.uniform1f(uniforms.u_ageIntensity, config.ageIntensity || 0.0);
+    gl!.uniform1f(uniforms.u_yellowing, config.yellowing || 0.0);
+    gl!.uniform1f(uniforms.u_stains, config.stains || 0.0);
+    gl!.uniform1f(uniforms.u_stainOpacity, config.stainOpacity || 0.0);
+    gl!.uniform1f(uniforms.u_stainScale, config.stainScale || 1.0);
+    gl!.uniform1f(uniforms.u_grainAmount, config.grainAmount || 0.02);
     
     // Texture parameters
-    gl.uniform1f(uniforms.u_macroFrequency, config.texture.macroFrequency);
-    gl.uniform1f(uniforms.u_macroAmplitude, config.texture.macroAmplitude);
-    gl.uniform1f(uniforms.u_mesoFrequency, config.texture.mesoFrequency);
-    gl.uniform1f(uniforms.u_mesoAmplitude, config.texture.mesoAmplitude);
-    gl.uniform1f(uniforms.u_microFrequency, config.texture.microFrequency);
-    gl.uniform1f(uniforms.u_microAmplitude, config.texture.microAmplitude);
-    gl.uniform1f(uniforms.u_anisotropyRatio, config.texture.anisotropyRatio);
-    gl.uniform1f(uniforms.u_anisotropyAngle, config.texture.anisotropyAngle);
+    gl!.uniform1f(uniforms.u_macroFrequency, config.texture.macroFrequency);
+    gl!.uniform1f(uniforms.u_macroAmplitude, config.texture.macroAmplitude);
+    gl!.uniform1f(uniforms.u_mesoFrequency, config.texture.mesoFrequency);
+    gl!.uniform1f(uniforms.u_mesoAmplitude, config.texture.mesoAmplitude);
+    gl!.uniform1f(uniforms.u_microFrequency, config.texture.microFrequency);
+    gl!.uniform1f(uniforms.u_microAmplitude, config.texture.microAmplitude);
+    gl!.uniform1f(uniforms.u_anisotropyRatio, config.texture.anisotropyRatio);
+    gl!.uniform1f(uniforms.u_anisotropyAngle, config.texture.anisotropyAngle);
     
     // Lighting parameters
-    gl.uniform1f(uniforms.u_diffuseIntensity, config.lighting.diffuseIntensity);
-    gl.uniform1f(uniforms.u_diffuseAngle, config.lighting.diffuseAngle);
-    gl.uniform1f(uniforms.u_gradientIntensity, config.lighting.gradientIntensity);
-    gl.uniform1f(uniforms.u_edgeDarkening, config.lighting.edgeDarkening);
+    gl!.uniform1f(uniforms.u_diffuseIntensity, config.lighting.diffuseIntensity);
+    gl!.uniform1f(uniforms.u_diffuseAngle, config.lighting.diffuseAngle);
+    gl!.uniform1f(uniforms.u_gradientIntensity, config.lighting.gradientIntensity);
+    gl!.uniform1f(uniforms.u_edgeDarkening, config.lighting.edgeDarkening);
     
     // Draw
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
     
     // Unbind
-    gl.bindVertexArray(null);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl!.bindVertexArray(null);
+    gl!.bindFramebuffer(gl!.FRAMEBUFFER, null);
   }
   
   function destroy() {
-    gl.deleteTexture(texture);
-    gl.deleteFramebuffer(framebuffer);
-    gl.deleteVertexArray(vao);
-    gl.deleteBuffer(vertexBuffer);
-    gl.deleteProgram(program);
+    gl!.deleteTexture(texture);
+    gl!.deleteFramebuffer(framebuffer!);
+    gl!.deleteVertexArray(vao!);
+    gl!.deleteBuffer(vertexBuffer!);
+    gl!.deleteProgram(program!);
   }
   
   return {
