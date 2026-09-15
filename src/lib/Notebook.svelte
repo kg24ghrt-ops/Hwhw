@@ -257,7 +257,7 @@
     zoomLevel = newZoom;
   }
 
-  function handleDoubleClick(event: PointerEvent) {
+  function handleDoubleClick(event: MouseEvent) {
     const now = Date.now();
     const timeDiff = now - lastClickTime;
     
@@ -399,8 +399,8 @@
             role="textbox"
             tabindex="-1"
             aria-label="Notebook page"
-            onpointerdown={(event) => handlePointerDown(event, pageIndex)}
-            ondblclick={handleDoubleClick}
+            onpointerdown={(e) => handlePointerDown(e, pageIndex)}
+            ondblclick={(e) => handleDoubleClick(e)}
           >
             {#each page as line, lineInPage (line.start)}
               {@const globalIndex = pageIndex * metrics.linesPerPage + lineInPage}
