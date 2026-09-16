@@ -305,24 +305,31 @@ function drawTextLines(
 /**
  * Export canvas to blob
  */
+export type CanvasToBlobCallback = (blob: Blob | null, error: Error | null) => void;
+
 export function canvasToBlob(
   canvas: HTMLCanvasElement,
+  callback: CanvasToBlobCallback,
   format: 'png' | 'jpeg' = 'png',
   quality: number = 0.92
-): Promise<Blob> {
-  return new Promise((resolve, reject) => {
+): void {
+  try {
     canvas.toBlob(
       (blob) => {
         if (blob) {
-          resolve(blob);
+          callback(blob, null);
         } else {
-          reject(new Error('Failed to create blob'));
+          callback(null, new Error('Failed to create blob'));
         }
       },
       `image/${format}`,
       quality
     );
-  });
+  } catch (error) {
+    callback(null, new Error(
+      `Failed to create blob: ${error instanceof Error ? error.message : String(error)}`
+    ));
+  }
 }
 
 /**

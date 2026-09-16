@@ -504,121 +504,166 @@ function hexToRgb(hex: string): [number, number, number] {
   return [r, g, b];
 }
 
+function createGPUResources(gl: WebGL2RenderingContext, width: number, height: number) {
+  let program: WebGLProgram | null = null;
+  let vertexBuffer: WebGLBuffer | null = null;
+  let vao: WebGLVertexArrayObject | null = null;
+  let texture: WebGLTexture | null = null;
+  let framebuffer: WebGLFramebuffer | null = null;
+
+  try {
+    program = createProgram(gl);
+
+    const vertices = new Float32Array([
+      -1, -1, 0, 0,
+       1, -1, 1, 0,
+      -1,  1, 0, 1,
+       1,  1, 1, 1,
+    ]);
+
+    vertexBuffer = gl.createBuffer();
+    if (!vertexBuffer) throw new Error('Failed to create vertex buffer');
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    vao = gl.createVertexArray();
+    if (!vao) throw new Error('Failed to create vertex array');
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+
+    const positionLoc = gl.getAttribLocation(program, 'a_position');
+    gl.enableVertexAttribArray(positionLoc);
+    gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 16, 0);
+
+    const texCoordLoc = gl.getAttribLocation(program, 'a_texCoord');
+    gl.enableVertexAttribArray(texCoordLoc);
+    gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 16, 8);
+
+    texture = gl.createTexture();
+    if (!texture) throw new Error('Failed to create texture');
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    framebuffer = gl.createFramebuffer();
+    if (!framebuffer) throw new Error('Failed to create framebuffer');
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+      throw new Error('Framebuffer incomplete');
+    }
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindVertexArray(null);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    const uniforms = {
+      u_resolution: gl.getUniformLocation(program, 'u_resolution'),
+      u_paperTone: gl.getUniformLocation(program, 'u_paperTone'),
+      u_ageColor: gl.getUniformLocation(program, 'u_ageColor'),
+      u_time: gl.getUniformLocation(program, 'u_time'),
+      u_brightness: gl.getUniformLocation(program, 'u_brightness'),
+      u_ageIntensity: gl.getUniformLocation(program, 'u_ageIntensity'),
+      u_yellowing: gl.getUniformLocation(program, 'u_yellowing'),
+      u_stains: gl.getUniformLocation(program, 'u_stains'),
+      u_stainOpacity: gl.getUniformLocation(program, 'u_stainOpacity'),
+      u_stainScale: gl.getUniformLocation(program, 'u_stainScale'),
+      u_grainAmount: gl.getUniformLocation(program, 'u_grainAmount'),
+      u_macroFrequency: gl.getUniformLocation(program, 'u_macroFrequency'),
+      u_macroAmplitude: gl.getUniformLocation(program, 'u_macroAmplitude'),
+      u_mesoFrequency: gl.getUniformLocation(program, 'u_mesoFrequency'),
+      u_mesoAmplitude: gl.getUniformLocation(program, 'u_mesoAmplitude'),
+      u_microFrequency: gl.getUniformLocation(program, 'u_microFrequency'),
+      u_microAmplitude: gl.getUniformLocation(program, 'u_microAmplitude'),
+      u_anisotropyRatio: gl.getUniformLocation(program, 'u_anisotropyRatio'),
+      u_anisotropyAngle: gl.getUniformLocation(program, 'u_anisotropyAngle'),
+      u_diffuseIntensity: gl.getUniformLocation(program, 'u_diffuseIntensity'),
+      u_diffuseAngle: gl.getUniformLocation(program, 'u_diffuseAngle'),
+      u_gradientIntensity: gl.getUniformLocation(program, 'u_gradientIntensity'),
+      u_edgeDarkening: gl.getUniformLocation(program, 'u_edgeDarkening'),
+    };
+
+    return { program, vertexBuffer, vao, texture, framebuffer, uniforms };
+  } catch (error) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindVertexArray(null);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    if (framebuffer) gl.deleteFramebuffer(framebuffer);
+    if (texture) gl.deleteTexture(texture);
+    if (vao) gl.deleteVertexArray(vao);
+    if (vertexBuffer) gl.deleteBuffer(vertexBuffer);
+    if (program) gl.deleteProgram(program);
+    throw error;
+  }
+}
+
+type GPUResources = ReturnType<typeof createGPUResources>;
+
+function deleteGPUResources(gl: WebGL2RenderingContext, resources: GPUResources) {
+  gl.deleteTexture(resources.texture);
+  gl.deleteFramebuffer(resources.framebuffer);
+  gl.deleteVertexArray(resources.vao);
+  gl.deleteBuffer(resources.vertexBuffer);
+  gl.deleteProgram(resources.program);
+}
+
 export function createGPUTextureRenderer(width: number, height: number): GPUTextureRenderer {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   
-  const gl = canvas.getContext('webgl2', {
+  const context = canvas.getContext('webgl2', {
     antialias: false,
     powerPreference: 'high-performance',
   });
-  
-  if (!gl) {
+
+  if (!context) {
     throw new Error('WebGL2 not supported');
   }
-  
-  const program = createProgram(gl);
-  
-  // Create vertex buffer
-  const vertices = new Float32Array([
-    -1, -1, 0, 0,
-     1, -1, 1, 0,
-    -1,  1, 0, 1,
-     1,  1, 1, 1,
-  ]);
-  
-  const vertexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-  
-  // Create VAO
-  const vao = gl.createVertexArray();
-  gl.bindVertexArray(vao);
-  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-  
-  const positionLoc = gl.getAttribLocation(program, 'a_position');
-  gl.enableVertexAttribArray(positionLoc);
-  gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 16, 0);
-  
-  const texCoordLoc = gl.getAttribLocation(program, 'a_texCoord');
-  gl.enableVertexAttribArray(texCoordLoc);
-  gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 16, 8);
-  
-  // Create texture
-  const texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  
-  // Create framebuffer
-  const framebuffer = gl.createFramebuffer();
-  gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-  
-  if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-    throw new Error('Framebuffer incomplete');
-  }
-  
-  // Unbind
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.bindVertexArray(null);
-  
-  // Get uniform locations
-  const uniforms = {
-    u_resolution: gl.getUniformLocation(program, 'u_resolution'),
-    u_paperTone: gl.getUniformLocation(program, 'u_paperTone'),
-    u_ageColor: gl.getUniformLocation(program, 'u_ageColor'),
-    u_time: gl.getUniformLocation(program, 'u_time'),
-    u_brightness: gl.getUniformLocation(program, 'u_brightness'),
-    u_ageIntensity: gl.getUniformLocation(program, 'u_ageIntensity'),
-    u_yellowing: gl.getUniformLocation(program, 'u_yellowing'),
-    u_stains: gl.getUniformLocation(program, 'u_stains'),
-    u_stainOpacity: gl.getUniformLocation(program, 'u_stainOpacity'),
-    u_stainScale: gl.getUniformLocation(program, 'u_stainScale'),
-    u_grainAmount: gl.getUniformLocation(program, 'u_grainAmount'),
-    u_macroFrequency: gl.getUniformLocation(program, 'u_macroFrequency'),
-    u_macroAmplitude: gl.getUniformLocation(program, 'u_macroAmplitude'),
-    u_mesoFrequency: gl.getUniformLocation(program, 'u_mesoFrequency'),
-    u_mesoAmplitude: gl.getUniformLocation(program, 'u_mesoAmplitude'),
-    u_microFrequency: gl.getUniformLocation(program, 'u_microFrequency'),
-    u_microAmplitude: gl.getUniformLocation(program, 'u_microAmplitude'),
-    u_anisotropyRatio: gl.getUniformLocation(program, 'u_anisotropyRatio'),
-    u_anisotropyAngle: gl.getUniformLocation(program, 'u_anisotropyAngle'),
-    u_diffuseIntensity: gl.getUniformLocation(program, 'u_diffuseIntensity'),
-    u_diffuseAngle: gl.getUniformLocation(program, 'u_diffuseAngle'),
-    u_gradientIntensity: gl.getUniformLocation(program, 'u_gradientIntensity'),
-    u_edgeDarkening: gl.getUniformLocation(program, 'u_edgeDarkening'),
-  };
-  
+
+  const gl: WebGL2RenderingContext = context;
+  let resources = createGPUResources(gl, width, height);
+
   let isContextLost = false;
-  let contextRestoredHandler: (() => void) | null = null;
   
   // Handle WebGL context loss
-  const contextLostHandler = (event: WebGLContextEvent) => {
+  const contextLostHandler = (event: Event) => {
     event.preventDefault();
     isContextLost = true;
     console.warn('WebGL context lost');
   };
   
   canvas.addEventListener('webglcontextlost', contextLostHandler);
-  
-  canvas.addEventListener('webglcontextrestored', () => {
-    isContextLost = false;
-    console.info('WebGL context restored');
-  });
+
+  const contextRestoredHandler = (event: Event) => {
+    event.preventDefault();
+
+    try {
+      resources = createGPUResources(gl, width, height);
+      isContextLost = false;
+      console.info('WebGL context restored');
+    } catch (error) {
+      console.error('Failed to restore WebGL resources:', error);
+    }
+  };
+
+  canvas.addEventListener('webglcontextrestored', contextRestoredHandler);
   
   let time = 0;
   
   function update(config: GPUTextureConfig) {
     // Check if context is lost or resources are missing
-    if (isContextLost || !gl || !framebuffer || !program || !vao) {
+    if (isContextLost) {
       return;
     }
+
+    const { framebuffer, program, vao, uniforms } = resources;
     
     time += 0.016; // ~60fps
     
@@ -670,35 +715,20 @@ export function createGPUTextureRenderer(width: number, height: number): GPUText
   function destroy() {
     // Remove event listeners to prevent memory leaks
     canvas.removeEventListener('webglcontextlost', contextLostHandler);
-    
-    if (!gl) {
-      return;
-    }
-    
-    if (texture) {
-      gl.deleteTexture(texture);
-    }
-    if (framebuffer) {
-      gl.deleteFramebuffer(framebuffer);
-    }
-    if (vao) {
-      gl.deleteVertexArray(vao);
-    }
-    if (vertexBuffer) {
-      gl.deleteBuffer(vertexBuffer);
-    }
-    if (program) {
-      gl.deleteProgram(program);
+    canvas.removeEventListener('webglcontextrestored', contextRestoredHandler);
+
+    if (!isContextLost) {
+      deleteGPUResources(gl, resources);
     }
   }
   
   return {
     canvas,
     gl,
-    texture,
-    framebuffer,
+    get texture() { return resources.texture; },
+    get framebuffer() { return resources.framebuffer; },
     update,
-    getTexture: () => texture,
+    getTexture: () => resources.texture,
     destroy,
     isContextLost: () => isContextLost,
   };
