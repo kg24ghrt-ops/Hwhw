@@ -61,14 +61,19 @@ export async function renderPageToCanvas(
   // Scale context for high-DPI output
   ctx.scale(scale, scale);
 
-  // Draw paper background with aging
-  await drawPaperBackground(ctx, width, height, spec, agePreset);
+  try {
+    // Draw paper background with aging
+    await drawPaperBackground(ctx, width, height, spec, agePreset);
 
-  // Draw ruling lines
-  drawRuling(ctx, spec, width, height, lineSpacing);
+    // Draw ruling lines
+    drawRuling(ctx, spec, width, height, lineSpacing);
 
-  // Draw text lines
-  drawTextLines(ctx, lines, fontFamily, fontWeight, fontSize, lineSpacing, baselineDrop, inkColor);
+    // Draw text lines
+    drawTextLines(ctx, lines, fontFamily, fontWeight, fontSize, lineSpacing, baselineDrop, inkColor);
+  } catch (error) {
+    console.error('Error rendering page to canvas:', error);
+    throw new Error(`Failed to render page: ${error instanceof Error ? error.message : String(error)}`);
+  }
 
   return canvas;
 }
@@ -97,7 +102,12 @@ async function drawPaperBackground(
   }
 
   // Add subtle noise texture
-  addNoiseTexture(ctx, width, height, agePreset);
+  try {
+    addNoiseTexture(ctx, width, height, agePreset);
+  } catch (error) {
+    console.warn('Failed to add noise texture:', error);
+    // Continue without noise texture - not critical
+  }
 
   // Add edge darkening / vignette
   addEdgeDarkening(ctx, width, height, agePreset);
@@ -145,7 +155,16 @@ function addNoiseTexture(
   const noiseIntensity = getNoiseIntensity(agePreset);
   if (noiseIntensity <= 0) return;
 
-  const imageData = ctx.getImageData(0, 0, width, height);
+  let imageData: ImageData;
+  try {
+    imageData = ctx.getImageData(0, 0, width, height);
+  } catch (error) {
+    // SecurityError if canvas is tainted, or DOMException if too large
+    console.warn('Could not get image data for noise texture:', error);
+    // Skip noise texture - canvas may be tainted or too large
+    return;
+  }
+
   const data = imageData.data;
 
   for (let i = 0; i < data.length; i += 4) {
@@ -155,7 +174,12 @@ function addNoiseTexture(
     data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + noise));
   }
 
-  ctx.putImageData(imageData, 0, 0);
+  try {
+    ctx.putImageData(imageData, 0, 0);
+  } catch (error) {
+    console.warn('Could not put image data for noise texture:', error);
+    // Skip putting the image data
+  }
 }
 
 function getNoiseIntensity(agePreset: string): number {
@@ -326,15 +350,20 @@ export async function exportAllPages(
   const format = options.format ?? 'png';
   const quality = options.quality ?? 0.92;
 
-  for (let i = 0; i < pages.length; i++) {
-    const canvas = await renderPageToCanvas(pages[i], options);
-    const pageLabel = String(i + 1).padStart(3, '0');
-    downloadCanvas(canvas, `page-${pageLabel}.${format}`, format, quality);
+  try {
+    for (let i = 0; i < pages.length; i++) {
+      const canvas = await renderPageToCanvas(pages[i], options);
+      const pageLabel = String(i + 1).padStart(3, '0');
+      downloadCanvas(canvas, `page-${pageLabel}.${format}`, format, quality);
 
-    // Small delay to avoid overwhelming the browser
-    if (i < pages.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Small delay to avoid overwhelming the browser
+      if (i < pages.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
     }
+  } catch (error) {
+    console.error('Error exporting all pages:', error);
+    throw new Error(`Failed to export pages: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -349,8 +378,13 @@ export async function exportSinglePage(
   const format = options.format ?? 'png';
   const quality = options.quality ?? 0.92;
 
-  const canvas = await renderPageToCanvas(pageData, options);
-  downloadCanvas(canvas, filename, format, quality);
+  try {
+    const canvas = await renderPageToCanvas(pageData, options);
+    downloadCanvas(canvas, filename, format, quality);
+  } catch (error) {
+    console.error('Error exporting single page:', error);
+    throw new Error(`Failed to export page: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 /**
@@ -366,14 +400,19 @@ export async function exportAsArchive(
   // Simple implementation: download each page with sequential names
   const format = options.format ?? 'png';
   
-  for (let i = 0; i < pages.length; i++) {
-    const canvas = await renderPageToCanvas(pages[i], options);
-    const pageLabel = String(i + 1).padStart(3, '0');
-    const filename = `${baseFilename}-page-${pageLabel}.${format}`;
-    downloadCanvas(canvas, filename, format, options.quality ?? 0.92);
+  try {
+    for (let i = 0; i < pages.length; i++) {
+      const canvas = await renderPageToCanvas(pages[i], options);
+      const pageLabel = String(i + 1).padStart(3, '0');
+      const filename = `${baseFilename}-page-${pageLabel}.${format}`;
+      downloadCanvas(canvas, filename, format, options.quality ?? 0.92);
 
-    if (i < pages.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      if (i < pages.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
     }
+  } catch (error) {
+    console.error('Error exporting archive:', error);
+    throw new Error(`Failed to export archive: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
