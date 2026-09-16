@@ -52,12 +52,13 @@ export interface GPUTextureConfig {
 
 export interface GPUTextureRenderer {
   canvas: HTMLCanvasElement;
-  gl: WebGL2RenderingContext;
+  gl: WebGL2RenderingContext | null;
   texture: WebGLTexture | null;
   framebuffer: WebGLFramebuffer | null;
   update: (config: GPUTextureConfig) => void;
   getTexture: () => WebGLTexture | null;
   destroy: () => void;
+  isContextLost: () => boolean;
 }
 
 // Paper age presets for realistic aging effects
@@ -595,15 +596,20 @@ export function createGPUTextureRenderer(width: number, height: number): GPUText
   };
   
   let isContextLost = false;
+  let contextRestoredHandler: (() => void) | null = null;
   
   // Handle WebGL context loss
-  canvas.addEventListener('webglcontextlost', (event) => {
+  const contextLostHandler = (event: WebGLContextEvent) => {
     event.preventDefault();
     isContextLost = true;
-  });
+    console.warn('WebGL context lost');
+  };
+  
+  canvas.addEventListener('webglcontextlost', contextLostHandler);
   
   canvas.addEventListener('webglcontextrestored', () => {
     isContextLost = false;
+    console.info('WebGL context restored');
   });
   
   let time = 0;
@@ -662,6 +668,9 @@ export function createGPUTextureRenderer(width: number, height: number): GPUText
   }
   
   function destroy() {
+    // Remove event listeners to prevent memory leaks
+    canvas.removeEventListener('webglcontextlost', contextLostHandler);
+    
     if (!gl) {
       return;
     }
@@ -691,6 +700,7 @@ export function createGPUTextureRenderer(width: number, height: number): GPUText
     update,
     getTexture: () => texture,
     destroy,
+    isContextLost: () => isContextLost,
   };
 }
 

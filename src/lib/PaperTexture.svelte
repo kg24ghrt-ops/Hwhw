@@ -40,6 +40,16 @@
           // Create GPU renderer
           gpuRenderer = createGPUTextureRenderer(width, height);
           updateGPUTexture();
+          
+          // Set up a check for context loss during rendering
+          const checkContextLoss = setInterval(() => {
+            if (gpuRenderer?.isContextLost()) {
+              console.warn('GPU context lost, falling back to SVG textures');
+              gpuSupported = false;
+              fallbackMode = true;
+              clearInterval(checkContextLoss);
+            }
+          }, 1000);
         } else {
           gpuSupported = false;
           fallbackMode = true;
