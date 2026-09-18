@@ -19,6 +19,7 @@
     text?: string;
     fontFamily?: string;
     inkColor?: string;
+    agePreset?: string;
   }
 
   let {

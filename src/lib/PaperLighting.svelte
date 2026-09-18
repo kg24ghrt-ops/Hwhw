@@ -1,9 +1,12 @@
-<script lang="ts">
+<script lang="ts" module>
   import { type PaperSpec } from './paperConfig';
   import { PAPER_SPEC_A4_COLLEGE } from './paperConfig';
   
   // Runes-compatible props access
   declare function $props<T>(): T;
+</script>
+
+<script lang="ts">
   const { spec = PAPER_SPEC_A4_COLLEGE } = $props<{ spec?: PaperSpec }>();
   
   // Generate random seed based on paper spec for consistent but varied lighting

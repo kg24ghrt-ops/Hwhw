@@ -29,6 +29,7 @@ export interface GPUTextureConfig {
   stainOpacity?: number;
   stainScale?: number;
   grainAmount?: number;
+  brightness?: number;
   texture: {
     macroFrequency: number;
     macroAmplitude: number;
@@ -596,6 +597,7 @@ export function createGPUTextureRenderer(width: number, height: number): GPUText
   let time = 0;
   
   function update(config: GPUTextureConfig) {
+    if (!gl) return;
     time += 0.016; // ~60fps
     
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
@@ -644,6 +646,7 @@ export function createGPUTextureRenderer(width: number, height: number): GPUText
   }
   
   function destroy() {
+    if (!gl) return;
     gl.deleteTexture(texture);
     gl.deleteFramebuffer(framebuffer);
     gl.deleteVertexArray(vao);
