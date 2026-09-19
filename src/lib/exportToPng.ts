@@ -11,7 +11,7 @@ export type ExportResult =
   | { ok: false; error: string };
 
 const HIDDEN_STYLE_ID = 'hwhw-export-hidden';
-const HIDDEN_SELECTOR = '.caret, .selection, .empty-hint, .capture';
+const HIDDEN_SELECTOR = '.caret, .selection, .empty-hint';
 
 function setHidden(on: boolean) {
   if (on) {
@@ -113,17 +113,27 @@ export async function exportNotebookToPng(
     // Force a reflow to ensure the DOM updates before capture
     void container.offsetHeight;
 
+    // Wait an additional frame for DOM changes to settle
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
     canvas = await html2canvas(container, {
       scale,
       logging: false,
       useCORS: true,
       allowTaint: true,
-      backgroundColor: null,
+      backgroundColor: '#fdfcf9',
       imageTimeout: 0,
       removeContainer: false,
       // Ensure proper handling of high-DPI displays
       windowWidth: typeof window !== 'undefined' ? window.innerWidth : undefined,
       windowHeight: typeof window !== 'undefined' ? window.innerHeight : undefined,
+      // Ignore the invisible textarea that's used for input
+      ignoreElements: (element: Element) => {
+        if (element.classList.contains('capture')) {
+          return true;
+        }
+        return false;
+      },
     });
 
     // Restore GPU canvas visibility

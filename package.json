@@ -23,6 +23,7 @@
     ]
   },
   "dependencies": {
-    "html2canvas": "^1.4.1"
+    "html2canvas": "^1.4.1",
+    "upng-js": "^2.1.0"
   }
 }
