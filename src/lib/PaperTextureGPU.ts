@@ -505,8 +505,14 @@ export function createGPUTextureRenderer(
   width: number,
   height: number,
 ): GPUTextureRenderer {
-  canvas.width = width;
-  canvas.height = height;
+  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  const physicalWidth = Math.floor(width * dpr);
+  const physicalHeight = Math.floor(height * dpr);
+  
+  canvas.width = physicalWidth;
+  canvas.height = physicalHeight;
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
   
   const gl = canvas.getContext('webgl2', {
     antialias: false,
@@ -544,10 +550,10 @@ export function createGPUTextureRenderer(
   gl.enableVertexAttribArray(texCoordLoc);
   gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 16, 8);
   
-  // Create texture
+  // Create texture - use physical dimensions
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, physicalWidth, physicalHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -601,13 +607,13 @@ export function createGPUTextureRenderer(
     time += 0.016; // ~60fps
     
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, width, height);
+    gl.viewport(0, 0, physicalWidth, physicalHeight);
     
     gl.useProgram(program);
     gl.bindVertexArray(vao);
     
-    // Set uniforms
-    gl.uniform2f(uniforms.u_resolution, config.width, config.height);
+    // Set uniforms - use physical dimensions for resolution
+    gl.uniform2f(uniforms.u_resolution, physicalWidth, physicalHeight);
     gl.uniform3f(uniforms.u_paperTone, ...hexToRgb(config.paperTone));
     gl.uniform3f(uniforms.u_ageColor, ...hexToRgb(config.ageColor || config.paperTone));
     gl.uniform1f(uniforms.u_time, time);

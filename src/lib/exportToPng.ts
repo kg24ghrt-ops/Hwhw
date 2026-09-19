@@ -56,7 +56,11 @@ export async function exportNotebookToPng(
   options: ExportPngOptions = {},
 ): Promise<ExportResult> {
   const { filenameBase = 'notebook' } = options;
-  const scale = options.scale ?? Math.max(2, window.devicePixelRatio || 1);
+  // Use a higher scale factor for better quality exports
+  // Multiply by devicePixelRatio to account for high-DPI displays
+  const baseScale = options.scale ?? 2;
+  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  const scale = baseScale * dpr;
   const onProgress = options.onProgress;
 
   if (!container) {

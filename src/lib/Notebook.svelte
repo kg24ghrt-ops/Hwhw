@@ -90,27 +90,47 @@
     const font = fontFamily;
     const size = fontSize;
     let cancelled = false;
-    if (typeof document !== 'undefined' && 'fonts' in document) {
-      document.fonts
-        .load(`${size}px "${font}"`)
-        .then(() => document.fonts.ready)
-        .then(() => {
-          if (!cancelled) fontVersion++;
-        })
-        .catch(() => {
+    let rafId: number | null = null;
+    
+    const loadFont = async () => {
+      if (typeof document !== 'undefined' && 'fonts' in document) {
+        try {
+          await document.fonts.load(`${size}px "${font}"`);
+          await document.fonts.ready;
+        } catch {
+          // Font loading failed, continue anyway
+        }
+      }
+      // Use requestAnimationFrame to ensure the font is ready for measurement
+      if (!cancelled) {
+        rafId = requestAnimationFrame(() => {
           if (!cancelled) fontVersion++;
         });
-    }
+      }
+    };
+    
+    loadFont();
+    
     return () => {
       cancelled = true;
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
   });
 
   onMount(() => {
+    let lastDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+    
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         availW = entry.contentRect.width;
         availH = entry.contentRect.height;
+      }
+      // Also check for DPR changes
+      const currentDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+      if (currentDpr !== lastDpr) {
+        lastDpr = currentDpr;
+        // Force a re-render by updating fontVersion
+        fontVersion++;
       }
     });
     observer.observe(viewport);
