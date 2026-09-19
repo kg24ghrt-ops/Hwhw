@@ -1,19 +1,24 @@
 import type { PaperSpec } from './paperConfig';
 
 let ctx: CanvasRenderingContext2D | null = null;
+let lastFont: string | null = null;
 
 function getCtx(): CanvasRenderingContext2D | null {
-  if (ctx) return ctx;
   if (typeof document === 'undefined') return null;
-  const canvas = document.createElement('canvas');
-  ctx = canvas.getContext('2d');
+  if (!ctx) {
+    const canvas = document.createElement('canvas');
+    ctx = canvas.getContext('2d');
+  }
   return ctx;
 }
 
 export function measure(text: string, font: string): number {
   const c = getCtx();
   if (!c) return text.length * 8;
-  c.font = font;
+  if (lastFont !== font) {
+    c.font = font;
+    lastFont = font;
+  }
   return c.measureText(text).width;
 }
 
@@ -25,7 +30,13 @@ export interface FontMetrics {
 export function getFontMetrics(font: string): FontMetrics {
   const c = getCtx();
   if (!c) return { ascent: 0.8, descent: 0.2 };
-  c.font = font;
+  
+  // Only set font if it's different from cached value
+  if (lastFont !== font) {
+    c.font = font;
+    lastFont = font;
+  }
+  
   const m = c.measureText('Hxg');
   const asc = (m as TextMetrics & { fontBoundingBoxAscent?: number }).fontBoundingBoxAscent;
   const desc = (m as TextMetrics & { fontBoundingBoxDescent?: number }).fontBoundingBoxDescent;
