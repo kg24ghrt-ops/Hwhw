@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import Notebook from './lib/Notebook.svelte';
-  import { PAPER_VARIANTS } from './lib/paperConfig';
+import { onMount } from 'svelte';
+import Notebook from './lib/Notebook.svelte';
+import { PAPER_VARIANTS } from './lib/paperConfig';
+import { exportNotebookToPng } from './lib/exportToPng';
 
   const HANDS = [
     { id: 'Caveat', label: 'Caveat' },
@@ -33,6 +34,8 @@
   let text = $state('');
   let agePreset = $state('new');
   let loaded = $state(false);
+  let desk: HTMLElement;
+  let exportStatus = $state<'idle' | 'exporting'>('idle');
 
   const spec = $derived(PAPER_VARIANTS.find((variant) => variant.id === paperId)?.spec ?? PAPER_VARIANTS[0].spec);
 
@@ -75,6 +78,21 @@
       text = '';
     }
   }
+
+  async function downloadPng() {
+    exportStatus = 'exporting';
+    try {
+      const pages = desk?.querySelector('.pages') as HTMLElement | null;
+      const result = await exportNotebookToPng(pages, {
+        onProgress: () => {},
+      });
+      if (!result.ok) {
+        alert(result.error);
+      }
+    } finally {
+      exportStatus = 'idle';
+    }
+  }
 </script>
 
 <div class="app">
@@ -83,7 +101,7 @@
     <span class="brand-sub">paper you can type on</span>
   </header>
 
-  <main class="desk">
+  <main class="desk" bind:this={desk}>
     <Notebook {spec} bind:text fontFamily={hand} inkColor={ink} />
   </main>
 
@@ -133,6 +151,13 @@
     </label>
 
     <button type="button" class="erase" onclick={clearPage}>New page</button>
+    <button type="button" class="erase export" onclick={downloadPng} disabled={exportStatus === 'exporting'}>
+      {#if exportStatus === 'exporting'}
+        Exporting…
+      {:else}
+        Download PNG
+      {/if}
+    </button>
   </footer>
 </div>
 
@@ -257,6 +282,11 @@
   .erase:hover,
   select:hover {
     background: rgba(255, 255, 255, 0.98);
+  }
+
+  .export:disabled {
+    opacity: 0.6;
+    cursor: wait;
   }
 
   @media (max-width: 640px) {

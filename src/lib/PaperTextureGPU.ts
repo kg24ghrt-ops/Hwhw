@@ -53,10 +53,7 @@ export interface GPUTextureConfig {
 export interface GPUTextureRenderer {
   canvas: HTMLCanvasElement;
   gl: WebGL2RenderingContext;
-  texture: WebGLTexture | null;
-  framebuffer: WebGLFramebuffer | null;
   update: (config: GPUTextureConfig) => void;
-  getTexture: () => WebGLTexture | null;
   destroy: () => void;
 }
 
@@ -503,8 +500,11 @@ function hexToRgb(hex: string): [number, number, number] {
   return [r, g, b];
 }
 
-export function createGPUTextureRenderer(width: number, height: number): GPUTextureRenderer {
-  const canvas = document.createElement('canvas');
+export function createGPUTextureRenderer(
+  canvas: HTMLCanvasElement = document.createElement('canvas'),
+  width: number,
+  height: number,
+): GPUTextureRenderer {
   canvas.width = width;
   canvas.height = height;
   
@@ -600,7 +600,7 @@ export function createGPUTextureRenderer(width: number, height: number): GPUText
     if (!gl) return;
     time += 0.016; // ~60fps
     
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, width, height);
     
     gl.useProgram(program);
@@ -657,10 +657,7 @@ export function createGPUTextureRenderer(width: number, height: number): GPUText
   return {
     canvas,
     gl,
-    texture,
-    framebuffer,
     update,
-    getTexture: () => texture,
     destroy,
   };
 }
@@ -670,7 +667,7 @@ let sharedRenderer: GPUTextureRenderer | null = null;
 
 export function getSharedGPUTextureRenderer(width: number, height: number): GPUTextureRenderer {
   if (!sharedRenderer) {
-    sharedRenderer = createGPUTextureRenderer(width, height);
+    sharedRenderer = createGPUTextureRenderer(document.createElement('canvas'), width, height);
   }
   return sharedRenderer;
 }

@@ -31,20 +31,10 @@
   onMount(() => {
     if (useGPU && typeof window !== 'undefined') {
       try {
-        // Test WebGL2 support
-        const testCanvas = document.createElement('canvas');
-        const gl = testCanvas.getContext('webgl2');
-        
-        if (gl) {
-          gpuSupported = true;
-          // Create GPU renderer
-          gpuRenderer = createGPUTextureRenderer(width, height);
-          updateGPUTexture();
-        } else {
-          gpuSupported = false;
-          fallbackMode = true;
-          console.warn('WebGL2 not supported, falling back to SVG textures');
-        }
+        if (!canvas) throw new Error('canvas not available');
+        gpuRenderer = createGPUTextureRenderer(canvas, width, height);
+        gpuSupported = true;
+        updateGPUTexture();
       } catch (e) {
         gpuSupported = false;
         fallbackMode = true;
@@ -116,9 +106,13 @@
     if (gpuRenderer && (width !== gpuRenderer.canvas.width || height !== gpuRenderer.canvas.height)) {
       // Recreate renderer with new size
       try {
+        if (!canvas) {
+          fallbackMode = true;
+          return;
+        }
         gpuRenderer.destroy();
-        gpuRenderer = createGPUTextureRenderer(width, height);
-        updateGPUTexture();
+        gpuRenderer = createGPUTextureRenderer(canvas, width, height);
+      updateGPUTexture();
       } catch (e) {
         console.warn('Error resizing GPU renderer:', e);
         fallbackMode = true;
@@ -128,16 +122,15 @@
 </script>
 
 <div class="paper-texture">
-  {#if gpuSupported && gpuRenderer && !fallbackMode}
-    <canvas 
-      bind:this={canvas} 
-      width={width} 
-      height={height}
-      style="width:100%; height:100%; display:block;"
-      aria-label="GPU-accelerated paper texture"
-    ></canvas>
-  {:else}
-    <!-- Fallback SVG textures -->
+  <canvas
+    bind:this={canvas}
+    width={width}
+    height={height}
+    class="gpu-canvas"
+    class:hidden={fallbackMode}
+    aria-label="GPU-accelerated paper texture"
+  ></canvas>
+  {#if fallbackMode}
     <div class="texture-layer grain" style="background-image:{grainUrl};"></div>
     <div class="texture-layer fiber" style="background-image:{fiberUrl};"></div>
   {/if}
@@ -168,7 +161,7 @@
     opacity: 0.045;
   }
 
-  canvas {
+  .gpu-canvas {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -176,5 +169,9 @@
     object-fit: cover;
     mix-blend-mode: multiply;
     opacity: 0.85;
+  }
+
+  .hidden {
+    display: none;
   }
 </style>
