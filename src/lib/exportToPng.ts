@@ -56,11 +56,9 @@ export async function exportNotebookToPng(
   options: ExportPngOptions = {},
 ): Promise<ExportResult> {
   const { filenameBase = 'notebook' } = options;
-  // Use a higher scale factor for better quality exports
-  // Multiply by devicePixelRatio to account for high-DPI displays
-  const baseScale = options.scale ?? 2;
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const scale = baseScale * dpr;
+  // Use a fixed scale factor for predictable output resolution
+  // html2canvas handles devicePixelRatio internally, so we use a base scale only
+  const scale = options.scale ?? 2;
   const onProgress = options.onProgress;
 
   if (!container) {
@@ -69,9 +67,12 @@ export async function exportNotebookToPng(
 
   onProgress?.('Preparing page…');
 
+  // Ensure all fonts are fully loaded before capture
   if (typeof document !== 'undefined' && 'fonts' in document) {
     try {
       await document.fonts.ready;
+      // Give fonts an extra frame to settle after loading
+      await new Promise(resolve => requestAnimationFrame(resolve));
     } catch {
       /* fonts may already be ready */
     }
@@ -89,6 +90,9 @@ export async function exportNotebookToPng(
       backgroundColor: null,
       imageTimeout: 0,
       removeContainer: false,
+      // Ensure proper handling of high-DPI displays
+      windowWidth: typeof window !== 'undefined' ? window.innerWidth : undefined,
+      windowHeight: typeof window !== 'undefined' ? window.innerHeight : undefined,
     });
   } catch (e: unknown) {
     setHidden(false);
