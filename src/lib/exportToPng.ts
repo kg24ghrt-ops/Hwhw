@@ -12,13 +12,14 @@ export type ExportResult =
 
 const HIDDEN_STYLE_ID = 'hwhw-export-hidden';
 const HIDDEN_SELECTOR = '.caret, .selection, .empty-hint';
+const UI_CONTROLS_SELECTOR = '.tray, .brand, .capture';
 
 function setHidden(on: boolean) {
   if (on) {
     if (document.getElementById(HIDDEN_STYLE_ID)) return;
     const style = document.createElement('style');
     style.id = HIDDEN_STYLE_ID;
-    style.textContent = `${HIDDEN_SELECTOR} { display: none !important; }`;
+    style.textContent = `${HIDDEN_SELECTOR}, ${UI_CONTROLS_SELECTOR} { display: none !important; }`;
     document.head.appendChild(style);
   } else {
     document.getElementById(HIDDEN_STYLE_ID)?.remove();
@@ -100,16 +101,6 @@ export async function exportNotebookToPng(
       el.style.mixBlendMode = 'normal';
     });
 
-    // Temporarily hide GPU canvases to avoid taint issues during capture
-    // The paper texture will be captured from the fallback SVG layers or CSS background
-    const gpuCanvases = Array.from(
-      container.querySelectorAll<HTMLCanvasElement>('canvas.gpu-canvas')
-    );
-    const originalDisplays = gpuCanvases.map((c) => c.style.display);
-    gpuCanvases.forEach((c) => {
-      c.style.display = 'none';
-    });
-
     // Force a reflow to ensure the DOM updates before capture
     void container.offsetHeight;
 
@@ -134,11 +125,6 @@ export async function exportNotebookToPng(
         }
         return false;
       },
-    });
-
-    // Restore GPU canvas visibility
-    gpuCanvases.forEach((c, i) => {
-      c.style.display = originalDisplays[i];
     });
 
     // Restore mix-blend-mode
