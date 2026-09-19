@@ -56,9 +56,30 @@
     }
   });
 
+  // Update GPU texture when spec or age preset changes
   $effect(() => {
     if (gpuRenderer && spec) {
       updateGPUTexture();
+    }
+  });
+
+  // Update GPU renderer when dimensions change (including DPR changes)
+  $effect(() => {
+    if (gpuRenderer && canvas) {
+      const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+      const expectedWidth = Math.floor(width * dpr);
+      const expectedHeight = Math.floor(height * dpr);
+      
+      if (gpuRenderer.canvas.width !== expectedWidth || gpuRenderer.canvas.height !== expectedHeight) {
+        try {
+          gpuRenderer.destroy();
+          gpuRenderer = createGPUTextureRenderer(canvas, width, height);
+          updateGPUTexture();
+        } catch (e) {
+          console.warn('Error resizing GPU renderer:', e);
+          fallbackMode = true;
+        }
+      }
     }
   });
 
@@ -100,25 +121,6 @@
       fallbackMode = true;
     }
   }
-
-  $effect(() => {
-    // Update GPU renderer size when dimensions change
-    if (gpuRenderer && (width !== gpuRenderer.canvas.width || height !== gpuRenderer.canvas.height)) {
-      // Recreate renderer with new size
-      try {
-        if (!canvas) {
-          fallbackMode = true;
-          return;
-        }
-        gpuRenderer.destroy();
-        gpuRenderer = createGPUTextureRenderer(canvas, width, height);
-      updateGPUTexture();
-      } catch (e) {
-        console.warn('Error resizing GPU renderer:', e);
-        fallbackMode = true;
-      }
-    }
-  });
 </script>
 
 <div class="paper-texture">
