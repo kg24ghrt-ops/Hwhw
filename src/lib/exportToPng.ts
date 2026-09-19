@@ -82,17 +82,63 @@ export async function exportNotebookToPng(
 
   let canvas: HTMLCanvasElement;
   try {
+    // Temporarily disable CSS isolation and mix-blend-mode that can interfere with html2canvas
+    const paperObjects = Array.from(
+      container.querySelectorAll<HTMLElement>('.paper-object')
+    );
+    const originalIsolation = paperObjects.map((el) => el.style.isolation);
+    paperObjects.forEach((el) => {
+      el.style.isolation = 'auto';
+    });
+
+    // Temporarily disable mix-blend-mode on ink-layer and selection elements
+    const inkLayers = Array.from(
+      container.querySelectorAll<HTMLElement>('.ink-layer, .selection')
+    );
+    const originalBlendModes = inkLayers.map((el) => el.style.mixBlendMode);
+    inkLayers.forEach((el) => {
+      el.style.mixBlendMode = 'normal';
+    });
+
+    // Temporarily hide GPU canvases to avoid taint issues during capture
+    // The paper texture will be captured from the fallback SVG layers or CSS background
+    const gpuCanvases = Array.from(
+      container.querySelectorAll<HTMLCanvasElement>('canvas.gpu-canvas')
+    );
+    const originalDisplays = gpuCanvases.map((c) => c.style.display);
+    gpuCanvases.forEach((c) => {
+      c.style.display = 'none';
+    });
+
+    // Force a reflow to ensure the DOM updates before capture
+    void container.offsetHeight;
+
     canvas = await html2canvas(container, {
       scale,
       logging: false,
       useCORS: true,
-      allowTaint: false,
+      allowTaint: true,
       backgroundColor: null,
       imageTimeout: 0,
       removeContainer: false,
       // Ensure proper handling of high-DPI displays
       windowWidth: typeof window !== 'undefined' ? window.innerWidth : undefined,
       windowHeight: typeof window !== 'undefined' ? window.innerHeight : undefined,
+    });
+
+    // Restore GPU canvas visibility
+    gpuCanvases.forEach((c, i) => {
+      c.style.display = originalDisplays[i];
+    });
+
+    // Restore mix-blend-mode
+    inkLayers.forEach((el, i) => {
+      el.style.mixBlendMode = originalBlendModes[i];
+    });
+
+    // Restore CSS isolation
+    paperObjects.forEach((el, i) => {
+      el.style.isolation = originalIsolation[i];
     });
   } catch (e: unknown) {
     setHidden(false);
