@@ -1,24 +1,26 @@
 <script lang="ts">
-import { onMount } from 'svelte';
-import Notebook from './lib/Notebook.svelte';
-import { PAPER_VARIANTS } from './lib/paperConfig';
-import { exportNotebookToPng } from './lib/exportToPng';
-
-  const HANDS = [
-    { id: 'Caveat', label: 'Caveat' },
-    { id: 'Kalam', label: 'Kalam' },
-    { id: 'Patrick Hand', label: 'Patrick Hand' },
-    { id: 'Shadows Into Light', label: 'Shadows' },
-    { id: 'Homemade Apple', label: 'Homemade Apple' },
-  ];
-
+  import { onMount } from 'svelte';
+  import Notebook from './lib/Notebook.svelte';
+  import { PAPER_VARIANTS } from './lib/paperConfig';
+  import { DEFAULT_HANDWRITING_STYLES } from './domain/entities/HandwritingStyle';
+  import { editorStore } from './presentation/stores/editorStore';
+  import { themeStore } from './presentation/stores/themeStore';
+  import ThemeSwitcher from './presentation/components/ThemeSwitcher.svelte';
+  import FontPicker from './presentation/components/FontPicker.svelte';
+  import { pngExporter } from './infrastructure/export/PngExporter';
+  import { svgExporter } from './infrastructure/export/SvgExporter';
+  
   const INKS = [
     { id: 'blue', color: '#1b2a52', label: 'Blue ink' },
     { id: 'black', color: '#1c1c1e', label: 'Black ink' },
     { id: 'red', color: '#8f1f1f', label: 'Red ink' },
     { id: 'green', color: '#1f4d33', label: 'Green ink' },
+    { id: 'cream', color: '#f5deb3', label: 'Cream ink (dark paper)' },
+    { id: 'white', color: '#f8f8f8', label: 'White ink (dark paper)' },
+    { id: 'cyan', color: '#00ffff', label: 'Cyan ink (blueprint)' },
+    { id: 'amber', color: '#ffbf00', label: 'Amber ink (night grid)' },
   ];
-
+  
   const AGE_PRESETS = [
     { id: 'new', label: 'New' },
     { id: 'slightly_used', label: 'Slightly Used' },
@@ -28,67 +30,115 @@ import { exportNotebookToPng } from './lib/exportToPng';
     { id: 'antique', label: 'Antique' },
   ];
 
-  let paperId = $state('a4-college');
-  let hand = $state('Caveat');
-  let ink = $state('#1b2a52');
-  let text = $state('');
-  let agePreset = $state('new');
   let loaded = $state(false);
   let desk: HTMLElement;
   let exportStatus = $state<'idle' | 'exporting'>('idle');
-
+  let exportFormat = $state<'png' | 'svg'>('png');
+  
+  // Sync with editor store
+  const text = $derived(editorStore.text);
+  const paperId = $derived(editorStore.paperId);
+  const handwritingStyleId = $derived(editorStore.handwritingStyleId);
+  const inkColor = $derived(editorStore.inkColor);
+  const agePreset = $derived(editorStore.agePreset);
+  const jitterSeed = $derived(editorStore.jitterSeed);
+  
   const spec = $derived(PAPER_VARIANTS.find((variant) => variant.id === paperId)?.spec ?? PAPER_VARIANTS[0].spec);
 
-  onMount(() => {
-    try {
-      const raw = localStorage.getItem('notebook.v1');
-      if (raw) {
-        const saved = JSON.parse(raw);
-        if (typeof saved.text === 'string') text = saved.text;
-        if (typeof saved.paperId === 'string') paperId = saved.paperId;
-        if (typeof saved.hand === 'string') hand = saved.hand;
-        if (typeof saved.ink === 'string') ink = saved.ink;
-        if (typeof saved.agePreset === 'string') agePreset = saved.agePreset;
-      }
-    } catch {
-      /* ignore malformed storage */
-    }
+  onMount(async () => {
+    await editorStore.load();
     loaded = true;
-  });
-
-  let saveTimer: ReturnType<typeof setTimeout> | undefined;
-
-  $effect(() => {
-    const snapshot = JSON.stringify({ text, paperId, hand, ink, agePreset });
-    if (!loaded) return;
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      try {
-        localStorage.setItem('notebook.v1', snapshot);
-      } catch {
-        /* storage may be unavailable */
-      }
-    }, 400);
-    return () => clearTimeout(saveTimer);
   });
 
   function clearPage() {
     if (text.length === 0) return;
     if (confirm('Erase everything and start a fresh page?')) {
-      text = '';
+      editorStore.clearPage();
     }
   }
 
-  async function downloadPng() {
+  async function downloadExport() {
     exportStatus = 'exporting';
     try {
       const pages = desk?.querySelector('.pages') as HTMLElement | null;
-      const result = await exportNotebookToPng(pages, {
-        onProgress: () => {},
-      });
-      if (!result.ok) {
-        alert(result.error);
+      if (!pages) {
+        alert('No pages to export');
+        return;
       }
+
+      // Get the first page for export (in a real app, you'd export all pages)
+      const firstPage = pages.querySelector('.page-slot');
+      if (!firstPage) {
+        alert('No page found');
+        return;
+      }
+
+      // For now, use the existing DOM-based export
+      // TODO: Replace with canvas-based export using PaperCanvas component
+      const inkLayer = firstPage.querySelector('.ink-layer') as HTMLElement;
+      if (!inkLayer) {
+        alert('No content to export');
+        return;
+      }
+
+      // Create a temporary canvas for export
+      const rect = inkLayer.getBoundingClientRect();
+      const canvas = document.createElement('canvas');
+      const dpr = window.devicePixelRatio || 1;
+      const scale = dpr * 2;
+      canvas.width = Math.ceil(rect.width * scale);
+      canvas.height = Math.ceil(rect.height * scale);
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        alert('Failed to create canvas context');
+        return;
+      }
+
+      // Draw paper background
+      ctx.fillStyle = spec.paperTone;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Use html2canvas for DOM capture (temporary solution)
+      // TODO: Replace with HandwritingRenderer-based export
+      const html2canvas = (await import('html2canvas')).default;
+      const exportedCanvas = await html2canvas(inkLayer, {
+        backgroundColor: spec.paperTone,
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+      });
+
+      // Composite the exported content over paper background
+      ctx.drawImage(exportedCanvas, 0, 0, canvas.width, canvas.height);
+
+      // Trigger download
+      const blob: Blob | null = await new Promise((resolve) => {
+        canvas.toBlob(resolve, 'image/png', 1.0);
+      });
+
+      if (!blob) {
+        alert('Failed to generate PNG');
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      a.href = url;
+      a.download = `notebook-${timestamp}.png`;
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        a.remove();
+      }, 1000);
+
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert(`Export failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       exportStatus = 'idle';
     }
@@ -99,21 +149,27 @@ import { exportNotebookToPng } from './lib/exportToPng';
   <header class="brand">
     <span class="brand-mark">Notebook</span>
     <span class="brand-sub">paper you can type on</span>
+    <div class="brand-controls">
+      <ThemeSwitcher />
+    </div>
   </header>
 
   <main class="desk" bind:this={desk}>
-    <Notebook {spec} bind:text fontFamily={hand} inkColor={ink} />
+    <Notebook 
+      {spec} 
+      text={text} 
+      fontFamily={handwritingStyleId} 
+      inkColor={inkColor}
+      agePreset={agePreset}
+      ontext={(e) => editorStore.setText(e.detail.value)}
+    />
   </main>
 
   <footer class="tray" aria-label="Stationery">
-    <label class="tray-group">
-      <span class="tray-label">Hand</span>
-      <select bind:value={hand}>
-        {#each HANDS as option (option.id)}
-          <option value={option.id}>{option.label}</option>
-        {/each}
-      </select>
-    </label>
+    <FontPicker 
+      selectedFont={handwritingStyleId}
+      onFontChange={(fontId) => editorStore.setHandwritingStyleId(fontId)}
+    />
 
     <div class="tray-group">
       <span class="tray-label">Ink</span>
@@ -122,11 +178,11 @@ import { exportNotebookToPng } from './lib/exportToPng';
           <button
             type="button"
             class="swatch"
-            class:active={ink === option.color}
+            class:active={inkColor === option.color}
             style="background:{option.color};"
             title={option.label}
             aria-label={option.label}
-            onclick={() => (ink = option.color)}
+            onclick={() => editorStore.setInkColor(option.color)}
           ></button>
         {/each}
       </div>
@@ -134,7 +190,7 @@ import { exportNotebookToPng } from './lib/exportToPng';
 
     <label class="tray-group">
       <span class="tray-label">Paper</span>
-      <select bind:value={paperId}>
+      <select value={paperId} onchange={(e) => editorStore.setPaperId(e.currentTarget.value)}>
         {#each PAPER_VARIANTS as option (option.id)}
           <option value={option.id}>{option.label}</option>
         {/each}
@@ -143,7 +199,7 @@ import { exportNotebookToPng } from './lib/exportToPng';
 
     <label class="tray-group">
       <span class="tray-label">Age</span>
-      <select bind:value={agePreset}>
+      <select value={agePreset} onchange={(e) => editorStore.setAgePreset(e.currentTarget.value)}>
         {#each AGE_PRESETS as option (option.id)}
           <option value={option.id}>{option.label}</option>
         {/each}
@@ -151,7 +207,7 @@ import { exportNotebookToPng } from './lib/exportToPng';
     </label>
 
     <button type="button" class="erase" onclick={clearPage}>New page</button>
-    <button type="button" class="erase export" onclick={downloadPng} disabled={exportStatus === 'exporting'}>
+    <button type="button" class="erase export" onclick={downloadExport} disabled={exportStatus === 'exporting'}>
       {#if exportStatus === 'exporting'}
         Exporting…
       {:else}
@@ -180,7 +236,6 @@ import { exportNotebookToPng } from './lib/exportToPng';
     display: flex;
     align-items: baseline;
     gap: 10px;
-    pointer-events: none;
   }
 
   .brand-mark {
@@ -189,6 +244,7 @@ import { exportNotebookToPng } from './lib/exportToPng';
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #4a4238;
+    pointer-events: none;
   }
 
   .brand-sub {
@@ -196,6 +252,12 @@ import { exportNotebookToPng } from './lib/exportToPng';
     font-style: italic;
     font-size: 12px;
     color: #857a6b;
+    pointer-events: none;
+  }
+
+  .brand-controls {
+    pointer-events: auto;
+    margin-left: 16px;
   }
 
   .desk {
@@ -221,6 +283,12 @@ import { exportNotebookToPng } from './lib/exportToPng';
     font-family: Georgia, serif;
   }
 
+  :global(.dark) .tray {
+    background: linear-gradient(180deg, rgba(50, 50, 54, 0.96), rgba(40, 40, 44, 0.96));
+    border-color: rgba(80, 80, 84, 0.4);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
   .tray-group {
     display: flex;
     align-items: center;
@@ -230,11 +298,19 @@ import { exportNotebookToPng } from './lib/exportToPng';
     letter-spacing: 0.04em;
   }
 
+  :global(.dark) .tray-group {
+    color: #a8a8ac;
+  }
+
   .tray-label {
     text-transform: uppercase;
     font-size: 10px;
     letter-spacing: 0.14em;
     color: #948a79;
+  }
+
+  :global(.dark) .tray-label {
+    color: #6a6a6e;
   }
 
   select {
@@ -246,6 +322,12 @@ import { exportNotebookToPng } from './lib/exportToPng';
     border: 1px solid rgba(120, 106, 86, 0.35);
     background: rgba(255, 255, 255, 0.75);
     cursor: pointer;
+  }
+
+  :global(.dark) select {
+    color: #d0d0d4;
+    background: rgba(60, 60, 64, 0.6);
+    border-color: rgba(80, 80, 84, 0.4);
   }
 
   .swatches {
@@ -279,9 +361,20 @@ import { exportNotebookToPng } from './lib/exportToPng';
     cursor: pointer;
   }
 
+  :global(.dark) .erase {
+    color: #d0d0d4;
+    background: rgba(60, 60, 64, 0.6);
+    border-color: rgba(80, 80, 84, 0.4);
+  }
+
   .erase:hover,
   select:hover {
     background: rgba(255, 255, 255, 0.98);
+  }
+
+  :global(.dark) .erase:hover,
+  :global(.dark) select:hover {
+    background: rgba(80, 80, 84, 0.8);
   }
 
   .export:disabled {

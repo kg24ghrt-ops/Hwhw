@@ -7,14 +7,18 @@ import type { RenderOptions } from '../render/HandwritingRenderer';
 import type { HandwritingStyle } from '../../../domain/entities/HandwritingStyle';
 import type { PaperSpec } from '../../../domain/entities/Paper';
 
-export interface PngExportResult {
+export interface PngExportSuccess {
   ok: true;
   blob: Blob;
   filename: string;
-} | {
+}
+
+export interface PngExportFailure {
   ok: false;
   error: string;
-};
+}
+
+export type PngExportResult = PngExportSuccess | PngExportFailure;
 
 export interface PngExportOptions {
   filenameBase?: string;

@@ -6,14 +6,18 @@ import { handwritingRenderer } from '../render/HandwritingRenderer';
 import type { RenderOptions } from '../render/HandwritingRenderer';
 import type { PaperSpec } from '../../../domain/entities/Paper';
 
-export interface SvgExportResult {
+export interface SvgExportSuccess {
   ok: true;
   svgContent: string;
   filename: string;
-} | {
+}
+
+export interface SvgExportFailure {
   ok: false;
   error: string;
-};
+}
+
+export type SvgExportResult = SvgExportSuccess | SvgExportFailure;
 
 export interface SvgExportOptions {
   filenameBase?: string;
