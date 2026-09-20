@@ -30,6 +30,7 @@ body {
     radial-gradient(circle at 50% 120%, rgba(78, 62, 44, 0.35), transparent 60%),
     linear-gradient(160deg, #cdc3b4 0%, #b9ad9b 48%, #a89a86 100%);
   background-attachment: fixed;
+  transition: background 0.3s ease;
 }
 
 #app {
@@ -39,8 +40,24 @@ body {
   flex-direction: column;
 }
 
+/* Dark Theme */
+.dark-theme body {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(40, 40, 45, 0.9), transparent 55%),
+    radial-gradient(circle at 50% 120%, rgba(20, 20, 25, 0.8), transparent 60%),
+    linear-gradient(160deg, #1a1a1e 0%, #121216 48%, #0d0d10 100%);
+  color: #e0e0e0;
+}
+
+.light-theme body {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(255, 252, 245, 0.85), transparent 55%),
+    radial-gradient(circle at 50% 120%, rgba(78, 62, 44, 0.35), transparent 60%),
+    linear-gradient(160deg, #cdc3b4 0%, #b9ad9b 48%, #a89a86 100%);
+}
+
 @media (prefers-color-scheme: dark) {
-  body {
+  :root:not(.light-theme):not(.dark-theme) body {
     filter: brightness(0.96);
   }
 }
