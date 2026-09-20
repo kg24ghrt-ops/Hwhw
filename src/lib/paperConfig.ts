@@ -1,6 +1,7 @@
 /**
  * Paper Renderer Configuration
  * Based on ISO 216 (A4: 210 x 297 mm), ISO/TR 10688, ISO 8254
+ * Includes both light and dark paper variants
  */
 
 export interface PaperSpec {
@@ -42,6 +43,9 @@ export interface PaperSpec {
     marginOpacity: number;
     marginWidthMm: number;
   };
+  // Dark mode specific properties
+  variant?: 'light' | 'dark';
+  ruleStyle?: 'solid' | 'dotted' | 'grid' | 'none';
 }
 
 export const PAPER_SPEC_A4_COLLEGE: PaperSpec = {
@@ -236,6 +240,7 @@ export interface PaperVariant {
 }
 
 export const PAPER_VARIANTS: PaperVariant[] = [
+  // Light variants
   { id: 'a4-college', label: 'A4 · College', spec: PAPER_SPEC_A4_COLLEGE },
   { id: 'a4-wide', label: 'A4 · Wide', spec: PAPER_SPEC_A4_WIDE },
   { id: 'letter-college', label: 'Letter · College', spec: PAPER_SPEC_LETTER_COLLEGE },
@@ -244,7 +249,239 @@ export const PAPER_VARIANTS: PaperVariant[] = [
   { id: 'a5-wide', label: 'A5 · Wide', spec: PAPER_SPEC_A5_WIDE },
   { id: 'a3-college', label: 'A3 · College', spec: PAPER_SPEC_A3_COLLEGE },
   { id: 'a6-college', label: 'A6 · College', spec: PAPER_SPEC_A6_COLLEGE },
+  // Dark variants
+  { id: 'black-leather', label: 'Black Leather Journal', spec: createBlackLeatherSpec() },
+  { id: 'blueprint', label: 'Blueprint', spec: createBlueprintSpec() },
+  { id: 'chalkboard', label: 'Chalkboard', spec: createChalkboardSpec() },
+  { id: 'dark-legal', label: 'Dark Legal Pad', spec: createDarkLegalSpec() },
+  { id: 'night-grid', label: 'Night Grid', spec: createNightGridSpec() },
 ];
+
+// Dark variant specs
+function createBlackLeatherSpec(): PaperSpec {
+  return {
+    widthMm: 210,
+    heightMm: 297,
+    rulingSpacingMm: 6,
+    marginMm: 30,
+    paperTone: '#1a1a1d',
+    brightness: 45,
+    variant: 'dark',
+    ruleStyle: 'solid',
+    texture: {
+      macroFrequency: 0.0008,
+      macroAmplitude: 0.02,
+      mesoFrequency: 0.003,
+      mesoAmplitude: 0.04,
+      microFrequency: 0.025,
+      microAmplitude: 0.03,
+      anisotropyRatio: 1.2,
+      anisotropyAngle: 45,
+    },
+    lighting: {
+      diffuseIntensity: 0.7,
+      diffuseAngle: -30,
+      gradientIntensity: 0.08,
+      edgeDarkening: 0.15,
+      contactShadowOpacity: 0.1,
+      contactShadowBlur: 12,
+    },
+    edge: {
+      edgeDarkening: 0.08,
+      edgeVariation: 0.04,
+      edgeThickness: 0.2,
+    },
+    ruling: {
+      lineColor: '#4a4a4a',
+      lineOpacity: 0.3,
+      lineWidthMm: 0.1,
+      lineSoftness: 0.5,
+      marginColor: '#5a5a5a',
+      marginOpacity: 0.35,
+      marginWidthMm: 0.2,
+    },
+  };
+}
+
+function createBlueprintSpec(): PaperSpec {
+  return {
+    widthMm: 210,
+    heightMm: 297,
+    rulingSpacingMm: 5,
+    marginMm: 28,
+    paperTone: '#0a1628',
+    brightness: 40,
+    variant: 'dark',
+    ruleStyle: 'grid',
+    texture: {
+      macroFrequency: 0.0003,
+      macroAmplitude: 0.01,
+      mesoFrequency: 0.0015,
+      mesoAmplitude: 0.02,
+      microFrequency: 0.015,
+      microAmplitude: 0.015,
+      anisotropyRatio: 1.0,
+      anisotropyAngle: 0,
+    },
+    lighting: {
+      diffuseIntensity: 0.65,
+      diffuseAngle: -45,
+      gradientIntensity: 0.05,
+      edgeDarkening: 0.12,
+      contactShadowOpacity: 0.08,
+      contactShadowBlur: 10,
+    },
+    edge: {
+      edgeDarkening: 0.06,
+      edgeVariation: 0.03,
+      edgeThickness: 0.15,
+    },
+    ruling: {
+      lineColor: '#1a3a5c',
+      lineOpacity: 0.5,
+      lineWidthMm: 0.06,
+      lineSoftness: 0.2,
+      marginColor: '#2a5a8c',
+      marginOpacity: 0.4,
+      marginWidthMm: 0.15,
+    },
+  };
+}
+
+function createChalkboardSpec(): PaperSpec {
+  return {
+    widthMm: 210,
+    heightMm: 297,
+    rulingSpacingMm: 6.5,
+    marginMm: 32,
+    paperTone: '#0d110f',
+    brightness: 35,
+    variant: 'dark',
+    ruleStyle: 'solid',
+    texture: {
+      macroFrequency: 0.001,
+      macroAmplitude: 0.025,
+      mesoFrequency: 0.004,
+      mesoAmplitude: 0.05,
+      microFrequency: 0.03,
+      microAmplitude: 0.04,
+      anisotropyRatio: 1.3,
+      anisotropyAngle: 90,
+    },
+    lighting: {
+      diffuseIntensity: 0.6,
+      diffuseAngle: -20,
+      gradientIntensity: 0.06,
+      edgeDarkening: 0.18,
+      contactShadowOpacity: 0.12,
+      contactShadowBlur: 14,
+    },
+    edge: {
+      edgeDarkening: 0.1,
+      edgeVariation: 0.05,
+      edgeThickness: 0.25,
+    },
+    ruling: {
+      lineColor: '#1a2a22',
+      lineOpacity: 0.25,
+      lineWidthMm: 0.12,
+      lineSoftness: 0.6,
+      marginColor: '#2a3a32',
+      marginOpacity: 0.3,
+      marginWidthMm: 0.2,
+    },
+  };
+}
+
+function createDarkLegalSpec(): PaperSpec {
+  return {
+    widthMm: 215.9,
+    heightMm: 279.4,
+    rulingSpacingMm: 6,
+    marginMm: 30,
+    paperTone: '#2a2a2e',
+    brightness: 42,
+    variant: 'dark',
+    ruleStyle: 'solid',
+    texture: {
+      macroFrequency: 0.0005,
+      macroAmplitude: 0.015,
+      mesoFrequency: 0.0025,
+      mesoAmplitude: 0.035,
+      microFrequency: 0.02,
+      microAmplitude: 0.025,
+      anisotropyRatio: 1.1,
+      anisotropyAngle: 0,
+    },
+    lighting: {
+      diffuseIntensity: 0.7,
+      diffuseAngle: -30,
+      gradientIntensity: 0.04,
+      edgeDarkening: 0.1,
+      contactShadowOpacity: 0.08,
+      contactShadowBlur: 10,
+    },
+    edge: {
+      edgeDarkening: 0.05,
+      edgeVariation: 0.025,
+      edgeThickness: 0.15,
+    },
+    ruling: {
+      lineColor: '#3a3a2e',
+      lineOpacity: 0.4,
+      lineWidthMm: 0.08,
+      lineSoftness: 0.3,
+      marginColor: '#4a4a3e',
+      marginOpacity: 0.45,
+      marginWidthMm: 0.18,
+    },
+  };
+}
+
+function createNightGridSpec(): PaperSpec {
+  return {
+    widthMm: 210,
+    heightMm: 297,
+    rulingSpacingMm: 5,
+    marginMm: 28,
+    paperTone: '#0a0a0a',
+    brightness: 38,
+    variant: 'dark',
+    ruleStyle: 'grid',
+    texture: {
+      macroFrequency: 0.0004,
+      macroAmplitude: 0.01,
+      mesoFrequency: 0.002,
+      mesoAmplitude: 0.025,
+      microFrequency: 0.018,
+      microAmplitude: 0.02,
+      anisotropyRatio: 1.0,
+      anisotropyAngle: 0,
+    },
+    lighting: {
+      diffuseIntensity: 0.65,
+      diffuseAngle: -35,
+      gradientIntensity: 0.03,
+      edgeDarkening: 0.08,
+      contactShadowOpacity: 0.06,
+      contactShadowBlur: 8,
+    },
+    edge: {
+      edgeDarkening: 0.04,
+      edgeVariation: 0.02,
+      edgeThickness: 0.12,
+    },
+    ruling: {
+      lineColor: '#1a1a1a',
+      lineOpacity: 0.35,
+      lineWidthMm: 0.05,
+      lineSoftness: 0.4,
+      marginColor: '#2a2a2a',
+      marginOpacity: 0.4,
+      marginWidthMm: 0.15,
+    },
+  };
+}
 
 export function mmToPx(mm: number, dpi: number = 96): number {
   return mm * dpi / 25.4;
