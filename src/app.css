@@ -30,6 +30,16 @@ body {
     radial-gradient(circle at 50% 120%, rgba(78, 62, 44, 0.35), transparent 60%),
     linear-gradient(160deg, #cdc3b4 0%, #b9ad9b 48%, #a89a86 100%);
   background-attachment: fixed;
+  transition: background 0.3s ease;
+}
+
+/* Dark theme overrides */
+html.dark body {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(60, 60, 64, 0.85), transparent 55%),
+    radial-gradient(circle at 50% 120%, rgba(20, 20, 24, 0.5), transparent 60%),
+    linear-gradient(160deg, #3a3a3e 0%, #2a2a2e 48%, #1a1a1e 100%);
+  color-scheme: dark;
 }
 
 #app {
@@ -37,10 +47,4 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    filter: brightness(0.96);
-  }
 }

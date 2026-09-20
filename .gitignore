@@ -1,65 +1,103 @@
-```
-# Dependencies
-node_modules/
-
-# Build artifacts
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
 dist/
 build/
 target/
 
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Environment files
+# Dependencies
+node_modules/
+venv/
+.venv/
 .env
 .env.local
-*.env.*
+.env.*
 
-# IDE files
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Editors
 .vscode/
 .idea/
-*.swp
-*.swo
-
-# Logs
-*.log
-
-# Temp files
-*.tmp
 
 # Coverage
 coverage/
 htmlcov/
 .coverage
 
-# Distribution / packaging
-*.tar.gz
-*.whl
-*.egg
-*.egg-info/
-
-# OS generated files
+# OS
 .DS_Store
 Thumbs.db
 
-# TypeScript/JavaScript specific
-lib/
-temp/
-out/
-dist/
-build/
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+
+# Python specific
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg-info/
+.eggs/
+
+# Node specific
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Source maps
-*.map
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# Bundle output
-bundle.js
-bundle.js.map
-```
+# Environment variables
+.env
+.env.local
+.env.*
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# Build systems
+dist/
+build/
+*.egg-info/
+.tox/
+.coverage
+
+# System files
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
